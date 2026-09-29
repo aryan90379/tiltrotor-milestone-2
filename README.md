@@ -20,7 +20,12 @@ To correctly handle the tiltrotor converting from helicopter mode ($\theta_{\tex
 3. **Shaft / Nacelle Frame $\mathcal{F}_S$**: Origin at the rotor hub center ($\mathbf{r}_{\text{hub}, L} = [0, -b/2, -0.80]^T$ m).
    - The nacelle tilt angle $\theta_{\text{nac}}$ rotates the shaft around the Body $Y_B$ axis.
    - Rotation Matrix from Shaft to Body:
-     $$ \mathbf{R}_{B \leftarrow S} = \begin{bmatrix} \cos\theta_{\text{nac}} & 0 & -\sin\theta_{\text{nac}} \\ 0 & 1 & 0 \\ \sin\theta_{\text{nac}} & 0 & \cos\theta_{\text{nac}} \end{bmatrix} $$
+     
+
+$$
+\mathbf{R}_{B \leftarrow S} = \begin{bmatrix} \cos\theta_{\text{nac}} & 0 & -\sin\theta_{\text{nac}} \\ 0 & 1 & 0 \\ \sin\theta_{\text{nac}} & 0 & \cos\theta_{\text{nac}} \end{bmatrix}
+$$
+
 4. **Azimuthal Frame $\psi$**: Tracks the rotating blade in the disk plane.
    - $\psi = 0^\circ$: Blade pointing aft toward the tail.
    - $\psi = 90^\circ$: Advancing blade (moving forward into the freestream).
@@ -50,14 +55,24 @@ The freestream $V_\infty$ is projected onto the tilted rotor disk. The effective
 
 ### Step 2.3: Swashplate Cyclic Kinematics
 At every mesh point $(r_i, \psi_j)$, the local blade geometric pitch $\theta$ is defined by the collective $\theta_0$, the linear twist $\theta_{\text{tw}} = -30^\circ$, and the cyclic inputs $\theta_{1c}, \theta_{1s}$:
-$$ \theta(r, \psi) = \theta_0 + \theta_{\text{tw}} \left( \frac{r}{R} - 0.75 \right) + \theta_{1c} \cos\psi + \theta_{1s} \sin\psi $$
+
+$$
+\theta(r, \psi) = \theta_0 + \theta_{\text{tw}} \left( \frac{r}{R} - 0.75 \right) + \theta_{1c} \cos\psi + \theta_{1s} \sin\psi
+$$
 
 ### Step 2.4: Glauert Fixed-Point Inflow Loop
 Because the rotor wake is blown backward at wake skew angle $\chi = \arctan\left(\frac{\mu}{\mu_z + \lambda_{i0}}\right)$, the rear of the disk sees more downwash. 
 The code runs a `while` loop (relaxation factor $0.20$, tolerance $10^{-5}$) to solve Glauert's quartic momentum equation:
-$$ \lambda_{i0} = \frac{C_T}{2 \sqrt{\mu^2 + (\mu_z + \lambda_{i0})^2}} $$
+
+$$
+\lambda_{i0} = \frac{C_T}{2 \sqrt{\mu^2 + (\mu_z + \lambda_{i0})^2}}
+$$
+
 Once converged, the local inflow at every grid point is computed using the Pitt-Peters longitudinal gradient $K_x$:
-$$ K_x = \frac{4}{3} \frac{1 - \cos\chi - 1.8\mu^2}{\sin\chi} \implies U_P(r, \psi) = \Omega R (\mu_z + \lambda_{i0}(1 + K_x \frac{r}{R} \cos\psi)) $$
+
+$$
+K_x = \frac{4}{3} \frac{1 - \cos\chi - 1.8\mu^2}{\sin\chi} \implies U_P(r, \psi) = \Omega R (\mu_z + \lambda_{i0}(1 + K_x \frac{r}{R} \cos\psi))
+$$
 
 ### Step 2.5: Sectional Loads, Reverse Flow, and Mach Calculations
 For every cell $(r_i, \psi_j)$:
@@ -67,8 +82,17 @@ For every cell $(r_i, \psi_j)$:
 3. **Inflow Angle and AoA**: $\phi = \text{atan2}(U_P, U_T)$, and $\alpha = \theta - \phi$.
 4. **Airfoil Lookup**: The $C_l(\alpha, M)$ and $C_d(\alpha, M)$ values are queried from the VR-12 database. Prandtl's tip loss factor $F(r) = \frac{2}{\pi}\arccos(e^{-f})$ is applied.
 5. **Sectional Forces (N/m)**:
-   $$ \frac{dF_z}{dr} = F(r) \frac{1}{2} \rho (U_T^2 + U_P^2) c \cdot (C_l \cos\phi - C_d \sin\phi) $$
-   $$ \frac{dF_\psi}{dr} = F(r) \frac{1}{2} \rho (U_T^2 + U_P^2) c \cdot (C_l \sin\phi + C_d \cos\phi) $$
+   
+
+$$
+\frac{dF_z}{dr} = F(r) \frac{1}{2} \rho (U_T^2 + U_P^2) c \cdot (C_l \cos\phi - C_d \sin\phi)
+$$
+
+   
+
+$$
+\frac{dF_\psi}{dr} = F(r) \frac{1}{2} \rho (U_T^2 + U_P^2) c \cdot (C_l \sin\phi + C_d \cos\phi)
+$$
 
 ### Step 2.6: Disk Integration to Hub Loads
 The code uses 2D numerical integration (`np.trapezoid` over $r$ and $\psi$) to sum the sectional forces into whole-rotor loads at the hub:
@@ -122,8 +146,14 @@ Using `scipy.interpolate.RegularGridInterpolator`, we evaluate control sensitivi
 
 ### 6.1 Mathematical Formulation of the Trim Problem
 For steady, unaccelerated flight, the 6-Degrees-of-Freedom (6-DOF) sum of forces and moments at the aircraft CG must equal zero:
-$$ \sum \mathbf{F}_B = \mathbf{F}_{\text{wing}} + \mathbf{F}_{\text{fuse}} + \mathbf{F}_{\text{emp}} + \mathbf{F}_{\text{grav}, B} + \sum_{i=1}^2 \left[ \mathbf{R}_{B \leftarrow S_i} \mathbf{F}_{S_i} \right] = \mathbf{0} $$
-$$ \sum \mathbf{M}_{\text{CG}} = \mathbf{M}_{\text{aero, CG}} + \sum_{i=1}^2 \left[ \mathbf{R}_{B \leftarrow S_i} \mathbf{M}_{S_i} + (\mathbf{r}_{\text{hub},i} - \mathbf{r}_{\text{CG}}) \times \mathbf{F}_{B,i} \right] = \mathbf{0} $$
+
+$$
+\sum \mathbf{F}_B = \mathbf{F}_{\text{wing}} + \mathbf{F}_{\text{fuse}} + \mathbf{F}_{\text{emp}} + \mathbf{F}_{\text{grav}, B} + \sum_{i=1}^2 \left[ \mathbf{R}_{B \leftarrow S_i} \mathbf{F}_{S_i} \right] = \mathbf{0}
+$$
+
+$$
+\sum \mathbf{M}_{\text{CG}} = \mathbf{M}_{\text{aero, CG}} + \sum_{i=1}^2 \left[ \mathbf{R}_{B \leftarrow S_i} \mathbf{M}_{S_i} + (\mathbf{r}_{\text{hub},i} - \mathbf{r}_{\text{CG}}) \times \mathbf{F}_{B,i} \right] = \mathbf{0}
+$$
 
 ### 6.2 Implementation of `solve_aircraft_trim_6dof`
 * **State Variables (The Pilot Inputs)**: $\mathbf{u} = [\theta_0, \theta_{1s}, \theta_{1c}, \alpha_B, \delta_e, \delta_a/\delta_r]^T$.
@@ -148,6 +178,16 @@ By sweeping the Trim Solver across a grid of $(V_\infty, \theta_{\text{nac}})$ p
 ### 8. Mission Planner v2 Time-Integration
 We simulate a full Outbound (`Hover → Airplane`) and Inbound (`Airplane → Hover`) mission segment.
 * **Euler Integration**: At each discrete time step $\Delta t = 2.0$ s, the solver trims the aircraft, computes current power $P$, and updates the state variables:
-  $$ \dot{V} = \frac{T \cos\theta_{\text{nac}} - D}{m}, \qquad \Delta h = V \sin\gamma \Delta t $$
-  $$ m_{\text{fuel}}(t + \Delta t) = m_{\text{fuel}}(t) - \text{SFC} \cdot P_{\text{req}} \cdot \Delta t $$
+  
+
+$$
+\dot{V} = \frac{T \cos\theta_{\text{nac}} - D}{m}, \qquad \Delta h = V \sin\gamma \Delta t
+$$
+
+  
+
+$$
+m_{\text{fuel}}(t + \Delta t) = m_{\text{fuel}}(t) - \text{SFC} \cdot P_{\text{req}} \cdot \Delta t
+$$
+
 * The results prove the transition schedule perfectly navigates the conversion corridor without violating any aerodynamic or control limits.
