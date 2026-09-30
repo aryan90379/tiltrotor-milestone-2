@@ -42,27 +42,31 @@ This row contains 4 specific graphs detailing the aircraft's response to Collect
 *   **X-axis:** Collective Pitch $\theta_0$ ($0^\circ \to 25^\circ$).
 *   **Y-axis:** Force [kN] in the Body Frame.
 *   **The Lines & Physics:** 
-    *   **Solid Red Line ($F_Z$, Vertical):** Plummets downward linearly. In our coordinate system, $Z$ points DOWN. So a highly negative $F_Z$ means the rotor is generating massive upward Lift! It is perfectly linear because increasing collective linearly increases Angle of Attack ($\alpha$), directly scaling $C_l = a_0 \alpha$.
-    *   **Blue/Green Lines ($F_X, F_Y$):** Stay near zero, as collective does not generate significant side/forward forces in hover.
+    *   **Solid Red Line (Helicopter $F_Z$):** Plummets downward linearly. In our coordinate system, $Z$ points DOWN. So a highly negative $F_Z$ means the rotor is generating massive upward Lift! 
+    *   **Solid Blue Line (Helicopter $F_X$):** Stays perfectly flat at zero. In pure helicopter mode ($90^\circ$), pulling collective only lifts you up, it does not push you forward.
+    *   **Dashed Blue Line (Conversion $F_X$):** Explodes upward into the positive! Because the engines are tilted $45^\circ$ forward, pulling collective now acts like an airplane propeller, yanking the aircraft violently forward.
+    *   **Dashed Red Line (Conversion $F_Z$):** Goes downward, but much less steeply than the solid red line. Since the engines are tilted $45^\circ$, half of the thrust vector is being wasted on pushing the aircraft forward instead of lifting it up.
 
 **Graph 2: Body Moments about CG [kN-m]**
 *   **X-axis:** Collective Pitch $\theta_0$.
 *   **Y-axis:** Moment [kN-m] in the Body Frame.
 *   **The Lines & Physics:**
-    *   **Solid Purple Line ($M_X$, Roll):** Explodes massively into the positive. This beautifully illustrates the **Dissymmetry of Lift**. When you increase collective pitch across the whole disk, the advancing side (right) grabs that extra pitch and multiplies it by its massive $V_{\infty}$ velocity, creating exponentially more lift than the retreating side. This tries to violently roll the helicopter!
-    *   **Dashed Green Line ($M_Z$, Yaw):** Increases slightly. As the blades grab more air, they create more drag. The engine has to twist harder (Torque) to keep them spinning, which tries to yaw the aircraft body in the opposite direction.
+    *   **Solid Purple Line (Helicopter $M_X$):** Explodes massively into the positive. This beautifully illustrates the **Dissymmetry of Lift**. The advancing side grabs the extra collective pitch and multiplies it by the forward airspeed, generating exponentially more lift than the retreating side. This tries to violently roll the helicopter!
+    *   **Dashed Orange Line (Conversion $M_Y$):** Goes negative (Nose Down pitch). Because the engines are tilted $45^\circ$, pulling collective generates massive forward thrust ($F_X$). Because the engines are mounted on the wingtips *above* the Center of Gravity, pushing forward from the top makes the nose pitch down.
 
 **Graph 3: Rotor Shaft Power [kW]**
 *   **X-axis:** Collective Pitch $\theta_0$.
 *   **Y-axis:** Required Shaft Power [kW].
 *   **The Lines & Physics:**
-    *   **Solid Blue Line (Helicopter, V=30):** Takes a severe, non-linear parabolic shape. According to Momentum Theory, Induced Power relates to Thrust by $P_i \propto T^{3/2}$. As the collective (Graph 1) pushes thrust up linearly, the aerodynamic drag and induced power explode exponentially.
+    *   **Solid Blue Line (Helicopter):** Takes a severe, non-linear parabolic shape. According to Momentum Theory, Induced Power relates to Thrust by $P_i \propto T^{3/2}$. As the collective (Graph 1) pushes thrust up linearly, aerodynamic drag and induced power explode exponentially.
+    *   **Dashed Red Line (Conversion):** Stays flat near zero, then rises. Why is it zero? Because the aircraft is flying fast ($60$ m/s) with the rotors facing forward. At low collective pitches, the wind blows *through* the rotors like a windmill, meaning they are practically autorotating for free! It only costs engine power once you pull collective past $15^\circ$.
 
 **Graph 4: Unstalled Disk Area [%]**
 *   **X-axis:** Collective Pitch $\theta_0$.
 *   **Y-axis:** Percentage of the rotor disk that is NOT stalled.
 *   **The Lines & Physics:**
-    *   **Solid Blue Line:** Stays high (90%) until about $\theta_0 = 10^\circ$, then violently crashes downward. Because the collective increases the pitch of the *entire* blade, it quickly forces the local Angle of Attack ($\alpha = \theta - \phi$) to exceed the VR-12 static stall limit ($15.8^\circ$) across the vast majority of the rotor disk. The 85% dotted safety limit proves that you cannot pull more than $14^\circ$ of collective without stalling the helicopter and falling out of the sky!
+    *   **Solid Blue Line (Helicopter):** Stays high (90%) until about $\theta_0 = 10^\circ$, then violently crashes downward. The collective pushes the entire blade too high, exceeding the static stall limit ($15.8^\circ$) across the vast majority of the rotor disk. 
+    *   **Dashed Red Line (Conversion):** Starts deeply stalled (35%) and actually *improves* as you pull collective! Why? At low collective ($0^\circ$), the fast $60$ m/s wind is hitting the *top* of the tilted blades (a massive negative angle of attack), causing a negative stall. As you pull collective up, you increase the blade pitch into the clean, positive aerodynamic region.
 
 ### Row 2: The 4.2 Longitudinal Cyclic Sweep ($\theta_{1s}$)
 **The Control:** Longitudinal cyclic applies a sine-wave variation to the blade pitch as it spins: $\Delta\theta = \theta_{1s} \sin\psi$. Because $\sin(90^\circ) = 1$ and $\sin(270^\circ) = -1$, this control strictly changes the pitch on the left and right sides of the helicopter.
