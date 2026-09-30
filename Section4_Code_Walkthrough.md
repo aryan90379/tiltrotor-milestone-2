@@ -59,7 +59,9 @@ This row contains 4 specific graphs detailing the aircraft's response to Collect
 *   **Y-axis:** Required Shaft Power [kW].
 *   **The Lines & Physics:**
     *   **Solid Blue Line (Helicopter):** Takes a severe, non-linear parabolic shape. According to Momentum Theory, Induced Power relates to Thrust by $P_i \propto T^{3/2}$. As the collective (Graph 1) pushes thrust up linearly, aerodynamic drag and induced power explode exponentially.
-    *   **Dashed Red Line (Conversion):** Stays flat near zero, then rises. Why is it zero? Because the aircraft is flying fast ($60$ m/s) with the rotors facing forward. At low collective pitches, the wind blows *through* the rotors like a windmill, meaning they are practically autorotating for free! It only costs engine power once you pull collective past $15^\circ$.
+    *   **Dashed Red Line (Conversion):** Stays perfectly flat at 0 kW, then skyrockets. Why doesn't it cost any power at low pitch? 
+        *   **Windmill Mode ($0^\circ \to 10^\circ$):** In Conversion, the aircraft is flying fast (60 m/s) with the engines tilted $45^\circ$ forward. At low pitch, the blades are relatively flat. The incoming 60 m/s wind hits the blades and pushes them around on its own, just like a windmill! Because the wind is doing the work to keep the blades spinning at 400 RPM, the turboshaft engine doesn't have to provide any torque (0 kW). *(Note: While this costs 0 power, Graph 1 shows you are also generating 0 Lift, meaning the helicopter is in freefall!).*
+        *   **Propeller Mode ($15^\circ+$):** As you pull the collective up, the blades angle sharply to bite into the air and generate lift/thrust. This creates massive aerodynamic drag trying to stop the blades from spinning. To keep them spinning at 400 RPM against that huge drag, the engine must suddenly kick in and burn fuel, causing the power curve to explode!
 
 **Graph 4: Unstalled Disk Area [%]**
 *   **X-axis:** Collective Pitch $\theta_0$.
