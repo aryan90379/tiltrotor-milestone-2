@@ -27,13 +27,37 @@ $$ \begin{bmatrix} F_X \\ F_Y \\ F_Z \end{bmatrix}_{\text{Body}} = \mathbf{R}_{B
 
 The goal of Section 4 is to prove that our aerodynamic code responds correctly to pilot inputs before we hand the model over to the 6-DOF Trim Solver. We sweep each of the three main rotor controls (Collective, Longitudinal Cyclic, and Lateral Cyclic) from $-10^\circ$ to $+10^\circ$ while freezing the others.
 
-### Row 1: The 4.1 Collective Sweep ($\t\theta_0$)
-**The Control:** The collective pitch ($	\theta_0$) physically rotates all 3 blades up or down by the exact same amount simultaneously. The pitch equation shifts uniformly: $\theta(r, \psi) = \t\theta_0 + \dots$
+### Row 1: The 4.1 Collective Sweep ($\theta_0$)
+**The Control:** The collective pitch ($\theta_0$) physically rotates all 3 blades up or down by the exact same amount simultaneously. The pitch equation shifts uniformly:
+$$ \theta(r, \psi) = \theta_0 + \theta_{\text{tw}}\left(\frac{r}{R} - 0.75\right) + \theta_{1c} \cos\psi + \theta_{1s} \sin\psi $$
 
-*   **Thrust Curve (Graph 1):** Thrust increases almost perfectly linearly with Collective pitch. This makes physical sense because increasing $\t\theta_0$ linearly increases the Angle of Attack ($\alpha$) everywhere on the disk, directly scaling the Lift coefficient ($C_l = a_0 \alpha$).
-*   **Power Curve (Graph 3):** Unlike Thrust, the blue Power curve takes a severe, non-linear parabolic shape. 
-    *   *The Physics:* According to Momentum Theory, the Induced Power ($P_i$) required to generate Thrust ($T$) is defined as $P_i = \frac{T \sqrt{T}}{\sqrt{2 \rho A}} \propto T^{3/2}$. As the collective pushes the thrust up linearly, the aerodynamic drag and induced power explode exponentially.
-*   **Stall Area (Graph 4):** As $\t\theta_0 > 15^\circ$, the local Angle of Attack ($\alpha = \theta - \phi$) exceeds the VR-12 static stall limit ($15.8^\circ$) across the vast majority of the rotor disk. The green line crashes downward, indicating that less than 85% of the disk is generating clean lift.
+This row contains 4 specific graphs detailing the aircraft's response to Collective input:
+
+**Graph 1: Body Forces [kN]**
+*   **X-axis:** Collective Pitch $\theta_0$ ($0^\circ \to 25^\circ$).
+*   **Y-axis:** Force [kN] in the Body Frame.
+*   **The Lines & Physics:** 
+    *   **Solid Red Line ($F_Z$, Vertical):** Plummets downward linearly. In our coordinate system, $Z$ points DOWN. So a highly negative $F_Z$ means the rotor is generating massive upward Lift! It is perfectly linear because increasing collective linearly increases Angle of Attack ($\alpha$), directly scaling $C_l = a_0 \alpha$.
+    *   **Blue/Green Lines ($F_X, F_Y$):** Stay near zero, as collective does not generate significant side/forward forces in hover.
+
+**Graph 2: Body Moments about CG [kN-m]**
+*   **X-axis:** Collective Pitch $\theta_0$.
+*   **Y-axis:** Moment [kN-m] in the Body Frame.
+*   **The Lines & Physics:**
+    *   **Solid Purple Line ($M_X$, Roll):** Explodes massively into the positive. This beautifully illustrates the **Dissymmetry of Lift**. When you increase collective pitch across the whole disk, the advancing side (right) grabs that extra pitch and multiplies it by its massive $V_{\infty}$ velocity, creating exponentially more lift than the retreating side. This tries to violently roll the helicopter!
+    *   **Dashed Green Line ($M_Z$, Yaw):** Increases slightly. As the blades grab more air, they create more drag. The engine has to twist harder (Torque) to keep them spinning, which tries to yaw the aircraft body in the opposite direction.
+
+**Graph 3: Rotor Shaft Power [kW]**
+*   **X-axis:** Collective Pitch $\theta_0$.
+*   **Y-axis:** Required Shaft Power [kW].
+*   **The Lines & Physics:**
+    *   **Solid Blue Line (Helicopter, V=30):** Takes a severe, non-linear parabolic shape. According to Momentum Theory, Induced Power relates to Thrust by $P_i \propto T^{3/2}$. As the collective (Graph 1) pushes thrust up linearly, the aerodynamic drag and induced power explode exponentially.
+
+**Graph 4: Unstalled Disk Area [%]**
+*   **X-axis:** Collective Pitch $\theta_0$.
+*   **Y-axis:** Percentage of the rotor disk that is NOT stalled.
+*   **The Lines & Physics:**
+    *   **Solid Blue Line:** Stays high (90%) until about $\theta_0 = 10^\circ$, then violently crashes downward. Because the collective increases the pitch of the *entire* blade, it quickly forces the local Angle of Attack ($\alpha = \theta - \phi$) to exceed the VR-12 static stall limit ($15.8^\circ$) across the vast majority of the rotor disk. The 85% dotted safety limit proves that you cannot pull more than $14^\circ$ of collective without stalling the helicopter and falling out of the sky!
 
 ### Row 2: The 4.2 Longitudinal Cyclic Sweep ($\theta_{1s}$)
 **The Control:** Longitudinal cyclic applies a sine-wave variation to the blade pitch as it spins: $\Delta\theta = \theta_{1s} \sin\psi$. Because $\sin(90^\circ) = 1$ and $\sin(270^\circ) = -1$, this control strictly changes the pitch on the left and right sides of the helicopter.
