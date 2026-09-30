@@ -158,11 +158,11 @@ $$ T = \frac{N_b}{2\pi} \int_{0}^{2\pi} \int_{R_{\text{root}}}^{R} \frac{1}{2}\r
 ---
 
 ## 3.2 Azimuthal Loading & Periodicity
-**The Goal:** Visualize the extreme aerodynamic asymmetry that occurs when the helicopter flies forward at 60 m/s ($V_{\text{edge}}$), creating the "Dissymmetry of Lift".
+**The Goal:** Visualize the extreme aerodynamic asymmetry that occurs when the helicopter flies forward at **$V_\infty = 60$ m/s** (with Nacelles tilted to **$\theta_{\text{nac}} = 75^\circ$**, giving an advance ratio **$\mu = 0.25$**), creating the "Dissymmetry of Lift".
 
 ### Graph 3.2(a): Normal Sectional Load Contour $dF_z/dr$ [N/m]
 *   **The Plot:** A top-down heatmap of the rotor disk. The center is the hub ($r=0$), and the outer edge is the blade tip ($r=4.58$ m). 
-    *   **The Thick White Dashed Circle (Left Side):** If you look at the exact center of the crosshairs, you'll see a thick white dashed circle that touches the center and bulges out to the left side (the Retreating side). This is the **Reverse Flow Boundary** ($U_T = 0$). Inside this white dashed circle, the helicopter is flying forward so fast that the 30 m/s wind is actually blowing *backwards* over the retreating blade! This is exactly why the entire area inside that dashed circle is dark blue/purple—the lift has violently crashed and actually gone negative!
+    *   **The Thick White Dashed Circle (Left Side):** If you look at the exact center of the crosshairs, you'll see a thick white dashed circle that touches the center and bulges out to the left side (the Retreating side). This is the **Reverse Flow Boundary** ($U_T = 0$). Inside this white dashed circle, the helicopter is flying forward so fast that the 60 m/s wind is actually blowing *backwards* over the retreating blade! This is exactly why the entire area inside that dashed circle is dark blue/purple—the lift has violently crashed and actually gone negative!
 *   **The Math:** This plots the vertical force distribution:
 $$ \frac{dF_z}{dr} = \frac{1}{2}\rho (U_T^2 + U_P^2) c (C_l \cos\phi - C_d \sin\phi) F(r) $$
 *   **The Physics:** You can clearly see a massive red "hotspot" on the right side (the Advancing Side, $\psi = 90^\circ$). Here, the blade's rotation speed ($\Omega r$) adds directly to the helicopter's forward speed ($V_{\infty}$), resulting in a massive tangential velocity ($U_T$). Since Lift scales with $U_T^2$, the lift explodes. Conversely, the left side (Retreating, $\psi = 270^\circ$) is dark blue because the speeds subtract, killing the lift.
@@ -179,6 +179,7 @@ $$ \frac{dF_\psi}{dr} = \frac{1}{2}\rho (U_T^2 + U_P^2) c (C_l \sin\phi + C_d \c
 *   **The Physics:** This graph perfectly summarizes the physics of the contour maps. The thrust forms a heavily skewed $1\text{P}$ (once-per-revolution) harmonic sine wave. 
     *   At the **Advancing Sector** (Yellow highlight, $\psi=90^\circ$), the single blade generates a peak lift of **56.6 kN**.
     *   At the **Retreating Sector** (Red highlight, $\psi=270^\circ$), the lift crashes to a minimum of **0.6 kN**.
+    *   The **Cycle-Averaged Mean Blade Lift** (the red dashed line) sits exactly at **22.64 kN**.
     *   Because the right side lifts 90x harder than the left side, it physically generates the massive $-127.9$ kN-m Roll Moment ($M_X$) that tries to violently flip the aircraft over. This proves why cyclic pitch is strictly required for forward flight!
 
 ## 3.3 Reverse Flow, Stall, and Mach Limits
