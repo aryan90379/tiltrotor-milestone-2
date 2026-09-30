@@ -123,5 +123,7 @@ This row contains 4 specific graphs detailing the aircraft's response to Collect
 *   **X-axis:** Lateral Cyclic $\theta_{1c}$.
 *   **Y-axis:** Percentage of the rotor disk that is NOT stalled.
 *   **The Lines & Physics:** 
-    *   **Solid Blue Line (Helicopter):** Plummets aggressively from 87% down to 72% on the left side of the graph. Pulling the stick too far backwards dynamically stalls the nose of the rotor disk, dropping the unstalled area way below the 85% safety limit.
+    *   **Solid Blue Line (Helicopter):** Notice how asymmetric this graph is! It peaks at 87% in the center, drops slightly to 86% on the right, but violently crashes down to 72% on the left side! Why? 
+        *   When you pull the stick backward (negative $\theta_{1c}$), the math adds extreme positive pitch to the *Nose* of the rotor disk. Because the Nose is flying directly into the 30 m/s headwind, pitching it up instantly forces it past the $15.8^\circ$ stall limit, crashing the unstalled area.
+        *   When you push the stick forward (positive $\theta_{1c}$), it adds pitch to the *Tail*. The tail is shielded in the wake of the rotor, so pitching it up doesn't cause nearly as much stalling, keeping the line high at 86%!
     *   **Dashed Red Line (Conversion):** Remains completely flat and stable around 84%. Because the airspeed is high (60 m/s) and the rotor is tilted and unloaded, altering the front/back lift distribution doesn't cause any severe stalling!
