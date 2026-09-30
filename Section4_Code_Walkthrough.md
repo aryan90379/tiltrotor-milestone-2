@@ -39,3 +39,8 @@ $$ \begin{bmatrix} F_X \\ F_Y \\ F_Z \end{bmatrix}_{\text{Body}} = \mathbf{R}_{B
 **The Control:** Lateral cyclic applies a $\cos\psi$ variation to the blade pitch: $\Delta\theta = \theta_{1c}\cos\psi$.
 *   **Pitch Moment Control (Graph 10):** Because $\cos(180^\circ) = -1$ and $\cos(0^\circ) = 1$, this control alters the lift at the front and rear of the rotor disk. 
 *   **The Physics:** By altering the front/rear lift distribution, the integral equation for $M_Y$ shifts linearly. The orange line ($M_Y$) crosses zero and allows the Trim Solver to actively pitch the nose of the aircraft up or down without significantly altering total thrust or shaft power.
+
+8485284852
+
+8485284852
+

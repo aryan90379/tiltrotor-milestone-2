@@ -77,3 +77,8 @@ $$ r(\psi) = -\mu R \sin\psi $$
 ## 3.4 Discretization Sensitivity
 *   **Radial $N_r$:** Convergence is slow and asymptotic (requires $N_r \ge 30$). The strict requirement is driven by the spatial resolution needed to evaluate the steep gradient of $dF_z/dr \to 0$ near $r=R$ caused by the $\arccos$ in the Prandtl tip-loss function.
 *   **Azimuthal $N_\psi$:** Convergence is practically instantaneous ($N_\psi \ge 12$). The aerodynamic loading over the azimuth is dominated by $1\text{P}$ and $2\text{P}$ trigonometric harmonics ($\sin\psi, \cos\psi$). The Periodic Trapezoidal Rule used in the solver exhibits exponential (spectral) convergence for perfectly periodic functions.
+
+8485284852
+
+8485284852
+
