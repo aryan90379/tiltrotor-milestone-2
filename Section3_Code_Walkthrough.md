@@ -53,11 +53,27 @@ $$ T = \frac{N_b}{2\pi} \int_{0}^{2\pi} \int_{R_{\text{root}}}^{R} \frac{1}{2}\r
 ---
 
 ## 3.2 Azimuthal Loading & Periodicity
-### Graph 3.2(b): 2π Periodic Blade Loading
-*   **Y-axis:** Integrated Sectional Thrust $T(\psi) = \int_{R_{\text{root}}}^R \frac{dF_z}{dr} \, dr$.
-*   **The Physics:** The curve takes the form of a heavily skewed $1\text{P}$ (once-per-revolution) harmonic. At $\psi=90^\circ$, $U_T = \Omega r + V_{\text{edge}}$. At $\psi=270^\circ$, $U_T = \Omega r - V_{\text{edge}}$. Since Lift $\propto U_T^2$, this squaring effect creates the massive $56.6$ kN vs $0.6$ kN asymmetry, generating a violent roll moment $M_X$.
+**The Goal:** Visualize the extreme aerodynamic asymmetry that occurs when the helicopter flies forward at 60 m/s ($V_{\text{edge}}$), creating the "Dissymmetry of Lift".
 
----
+### Graph 3.2(a): Normal Sectional Load Contour $dF_z/dr$ [N/m]
+*   **The Plot:** A top-down heatmap of the rotor disk. The center is the hub ($r=0$), the outer edge is the blade tip ($r=4.58$m).
+*   **The Math:** This plots the vertical force distribution:
+$$ \frac{dF_z}{dr} = \frac{1}{2}\rho (U_T^2 + U_P^2) c (C_l \cos\phi - C_d \sin\phi) F(r) $$
+*   **The Physics:** You can clearly see a massive red "hotspot" on the right side (the Advancing Side, $\psi = 90^\circ$). Here, the blade's rotation speed ($\Omega r$) adds directly to the helicopter's forward speed ($V_{\infty}$), resulting in a massive tangential velocity ($U_T$). Since Lift scales with $U_T^2$, the lift explodes. Conversely, the left side (Retreating, $\psi = 270^\circ$) is dark blue because the speeds subtract, killing the lift.
+
+### Graph 3.2(b): In-Plane Torque Load Contour $dF_\psi/dr$ [N/m]
+*   **The Plot:** A top-down heatmap showing the in-plane drag forces trying to slow the rotor down.
+*   **The Math:** This plots the horizontal force distribution:
+$$ \frac{dF_\psi}{dr} = \frac{1}{2}\rho (U_T^2 + U_P^2) c (C_l \sin\phi + C_d \cos\phi) F(r) $$
+*   **The Physics:** Notice that the drag is also heavily biased to the advancing right side. The engine has to fight through this asymmetric "wall of air" on the right side every time a blade spins through it. The integration of this contour gives us the total Shaft Torque ($Q$).
+
+### Graph 3.2(c): Azimuthal 2π Periodicity & Roll Moment Origin
+*   **X-axis:** Blade Azimuth Angle $\psi$ [deg]. The graph tracks a single blade across two full revolutions ($0^\circ \to 720^\circ$).
+*   **Y-axis:** Integrated Single-Blade Thrust $T_{\text{blade}}(\psi) = \int_{R_{\text{root}}}^R \frac{dF_z}{dr} \, dr$.
+*   **The Physics:** This graph perfectly summarizes the physics of the contour maps. The thrust forms a heavily skewed $1\text{P}$ (once-per-revolution) harmonic sine wave. 
+    *   At the **Advancing Sector** (Yellow highlight, $\psi=90^\circ$), the single blade generates a peak lift of **56.6 kN**.
+    *   At the **Retreating Sector** (Red highlight, $\psi=270^\circ$), the lift crashes to a minimum of **0.6 kN**.
+    *   Because the right side lifts 90x harder than the left side, it physically generates the massive $-127.9$ kN-m Roll Moment ($M_X$) that tries to violently flip the aircraft over. This proves why cyclic pitch is strictly required for forward flight!
 
 ## 3.3 Reverse Flow, Stall, and Mach Limits
 ### Graph 3.3(1): The Reverse Flow Boundary
@@ -81,4 +97,8 @@ $$ r(\psi) = -\mu R \sin\psi $$
 8485284852
 
 8485284852
+
+8904089040
+
+8904089040
 
