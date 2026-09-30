@@ -76,19 +76,26 @@ $$ \frac{dF_\psi}{dr} = \frac{1}{2}\rho (U_T^2 + U_P^2) c (C_l \sin\phi + C_d \c
     *   Because the right side lifts 90x harder than the left side, it physically generates the massive $-127.9$ kN-m Roll Moment ($M_X$) that tries to violently flip the aircraft over. This proves why cyclic pitch is strictly required for forward flight!
 
 ## 3.3 Reverse Flow, Stall, and Mach Limits
-### Graph 3.3(1): The Reverse Flow Boundary
-*   **The Math:** Reverse flow occurs strictly when the tangential velocity is negative ($U_T \le 0$). Solving $U_T(r, \psi) = \Omega r + V_{\text{edge}}\sin\psi = 0$ yields the geometric boundary of a circle on the retreating side:
+**The Goal:** Map the physical boundaries where the aerodynamics break down in fast forward flight. 
+
+### Graph 3.3(a): The Reverse Flow Boundary
+*   **The Plot:** Shows a contour map of the Tangential Velocity ($U_T$). A thick black circle is drawn exactly where $U_T = 0$.
+*   **The Math:** Reverse flow occurs strictly when $U_T \le 0$. Solving the velocity equation $U_T(r, \psi) = \Omega r + V_{\text{edge}}\sin\psi = 0$ yields the geometric boundary of a perfect circle on the retreating side:
 $$ r(\psi) = -\mu R \sin\psi $$
-*   **The Physics:** Inside this circle, air strikes the trailing edge. The solver applies the Viterna-Corrigan $360^\circ$ extrapolation to flip the $C_l$ and $C_d$ signs.
+*   **The Physics:** The helicopter is flying forward at 60 m/s. But near the root of the blade, the rotation speed ($\Omega r$) is only 20 m/s. Because the blade is spinning backward at 20 m/s but the helicopter is moving forward at 60 m/s, the wind actually hits the *trailing edge* (the sharp back) of the blade at 40 m/s! 
+*   **The Code Solution:** Inside this circle, standard airfoil tables break down. The solver applies the **Viterna-Corrigan $360^\circ$ extrapolation**, a mathematical trick that allows the code to calculate lift and drag even when the air hits the wing completely backward.
 
-### Graph 3.3(2): The Stall Boundary (The Figure-8)
-*   **The Math:** Shaded where $|\alpha| = |\theta - \phi| \ge 15.8^\circ$.
-*   **The Physics:** The two lobes occur because $\alpha$ blows up for different reasons. Left Lobe (Retreating): $U_T \to 0$, causing $\phi = \arctan(U_P/U_T) \to 90^\circ$. Right Lobe (Advancing Root): Large built-in twist ($\theta_{\text{root}} = 33.5^\circ$) coupled with low local $\Omega r$ causes $\alpha$ to exceed stall before $\phi$ can reduce it.
+### Graph 3.3(b): The Stall Boundary (The Figure-8)
+*   **The Plot:** A contour map of the absolute Angle of Attack ($|\alpha|$). The red zone is shaded wherever $|\alpha| \ge 15.8^\circ$ (the VR-12 airfoil stall limit).
+*   **The Physics:** It forms a bizarre "Figure-8" (or $\infty$) shape because the rotor is stalling in two places for two totally different reasons:
+    1.  **The Left Lobe (Retreating Stall):** On the left side, the blade is moving so slowly (due to reverse flow) that the downward wind (downwash, $U_P$) hits it almost completely vertically. This causes the inflow angle to approach $90^\circ$ ($\phi = \arctan(U_P/U_T) \to 90^\circ$), causing a massive, catastrophic stall.
+    2.  **The Right Lobe (Advancing Root Stall):** Tiltrotor blades have a severe $-30^\circ$ twist built into them (so they can act like airplane propellers later). This means the root is permanently pitched up to an extreme $33.5^\circ$. On the advancing side, the root simply catches too much air and stalls before the inflow angle can reduce it.
 
-### Graph 3.3(3): Advancing Tip Mach Number
-*   **The Math:** $M = \frac{\sqrt{U_T^2 + U_P^2}}{a_{sound}}$. Contours highlight the $M = 0.75$ Drag Divergence ($M_{dd}$) boundary and the peak $M = 0.84$ location at $(r=R, \psi=90^\circ)$.
-
----
+### Graph 3.3(c): Advancing Tip Mach Number
+*   **The Plot:** A contour map of the local Mach number.
+*   **The Math:** $M = \frac{\sqrt{U_T^2 + U_P^2}}{a_{\text{sound}}}$. The contours specifically highlight the $M = 0.75$ Drag Divergence ($M_{dd}$) boundary and the peak $M = 0.84$ location at the extreme right tip ($r=R, \psi=90^\circ$).
+*   **The Physics:** At the extreme right edge, the blade's rotation speed adds to the helicopter's forward speed. The tip velocity approaches the speed of sound ($M = 0.84$). 
+*   **The Design Implication:** Crossing the $M = 0.75$ boundary means shockwaves are forming on the blade, causing massive Wave Drag. This is the primary physical reason helicopters cannot fly faster than ~200 mph! To go faster, our tiltrotor must tilt its engines forward and slow down its RPM (which we do during Conversion).
 
 ## 3.4 Discretization Sensitivity
 *   **Radial $N_r$:** Convergence is slow and asymptotic (requires $N_r \ge 30$). The strict requirement is driven by the spatial resolution needed to evaluate the steep gradient of $dF_z/dr \to 0$ near $r=R$ caused by the $\arccos$ in the Prandtl tip-loss function.
@@ -101,4 +108,8 @@ $$ r(\psi) = -\mu R \sin\psi $$
 8904089040
 
 8904089040
+
+8969489694
+
+8969489694
 
