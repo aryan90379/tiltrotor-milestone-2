@@ -1,91 +1,79 @@
 # Section 3: Code-Level Walkthrough (The Verification Suite)
 
-This document explains exactly how the Python code generates the graphs for **Section 3 (Verification)**. 
+This document explains the rigorous mathematical and aerodynamic pipeline used to generate the graphs in **Section 3 (Verification)**. 
 
 ---
 
 ## The Theory: How "Edgewise BEMT" Actually Works
-Before we look at the graphs, we need to understand the beast that generated them: the `run_edgewise_bemt` function. This is the core physics engine of Milestone 2. 
+The `run_edgewise_bemt` function is the core physics engine of Milestone 2. In edgewise flight, the rotor disk experiences an asymmetric velocity field. The code solves this using a 5-step Blade Element Momentum Theory (BEMT) pipeline.
 
-In Milestone 1, the rotor was a simple 1D line because the wind hit it straight-on. But in Milestone 2, the wind hits the rotor *sideways* ("edgewise"), creating total aerodynamic chaos. To solve this, the code follows a strict 5-step physics pipeline:
+**1. The 2D Mesh Grid & Velocity Decomposition:**
+The continuous rotor disk is discretized into a 2D mesh grid with $N_r = 30$ radial rings and $N_\psi = 72$ azimuthal sectors.
+The incoming free-stream velocity $V_\infty$ is decomposed onto the tilted rotor disk (where $\alpha_{\text{eff}} = \theta_{\text{nac}} - \alpha_{\text{body}}$):
+$$ V_{\text{edge}} = V_\infty \sin(\alpha_{\text{eff}}) \quad \text{(In-plane velocity)} $$
+$$ V_{\text{axial}} = V_\infty \cos(\alpha_{\text{eff}}) \quad \text{(Perpendicular velocity)} $$
+The advance ratios are defined as $\mu = V_{\text{edge}} / (\Omega R)$ and $\mu_z = V_{\text{axial}} / (\Omega R)$.
 
-**1. The 2D Mesh Grid:**
-The code cannot use a 1D line anymore. It uses `np.meshgrid` to slice the rotor disk into a giant spiderweb—30 concentric rings ($r$) and 72 azimuthal pie-slices ($\psi$). This creates 2,160 individual grid cells. The code must calculate the aerodynamics at every single cell independently.
+**2. The Swashplate Kinematics:**
+For every cell $(r, \psi)$, the local geometric blade pitch is determined by the collective ($\theta_0$), built-in twist ($\theta_{\text{tw}}$), and cyclic inputs ($\theta_{1c}, \theta_{1s}$):
+$$ \theta(r, \psi) = \theta_0 + \theta_{\text{tw}}\left(\frac{r}{R} - 0.75\right) + \theta_{1c}\cos\psi + \theta_{1s}\sin\psi $$
 
-**2. The Wind & Swashplate Angles:**
-For every cell, the code calculates the exact pitch of the blade using the swashplate equation: 
-$\theta(r, \psi) = \theta_0 + \theta_{\text{twist}} + \theta_{1c}\cos\psi + \theta_{1s}\sin\psi$
-It also splits the incoming wind into $V_{\text{edge}}$ (sliding sideways across the disk) and $V_{\text{axial}}$ (punching through the disk).
+**3. The Glauert & Pitt-Peters Inflow Model:**
+Due to the skewed wake in forward flight ($\chi = \arctan(\frac{\mu}{\mu_z + \lambda_{i0}})$), the induced downwash is asymmetric. The code uses a fixed-point `while` loop to solve Glauert's momentum equation for the mean inflow $\lambda_{i0}$:
+$$ \lambda_{i0} = \frac{C_T}{2 \sqrt{\mu^2 + (\mu_z + \lambda_{i0})^2}} $$
+Once converged, the Pitt-Peters longitudinal gradient $K_x$ is applied to skew the downwash toward the rear of the disk:
+$$ K_x = \frac{4}{3} \frac{1 - \cos\chi - 1.8\mu^2}{\sin\chi} $$
 
-**3. The "Dirty Air" Wake Loop (Glauert & Pitt-Peters):**
-As the helicopter flies forward, the "dirty" turbulent air it pushes down gets blown backwards. This means the back of the rotor disk sees a much stronger downwash than the front. The code uses a `while` loop that guesses the downwash speed, calculates the thrust, and adjusts the guess until the Glauert momentum equations perfectly balance out. It then applies the *Pitt-Peters gradient* to skew the downwash heavier towards the back.
+**4. Local Aerodynamic Environment ($U_T, U_P$):**
+The local velocity components hitting the blade element are calculated as:
+$$ U_T(r, \psi) = \Omega r + V_{\text{edge}}\sin\psi \quad \text{(Tangential)} $$
+$$ U_P(r, \psi) = \Omega R \left( \mu_z + \lambda_{i0}\left(1 + K_x \frac{r}{R}\cos\psi\right) \right) \quad \text{(Perpendicular)} $$
+The local angle of attack is $\alpha = \theta - \phi$, where the inflow angle is $\phi = \arctan(U_P / U_T)$.
+The Mach number is evaluated as $M = \frac{\sqrt{U_T^2 + U_P^2}}{a}$. These variables query the VR-12 airfoil tables for $C_l$ and $C_d$.
 
-**4. The Aerodynamic Forces ($U_T, U_P$, and Airfoils):**
-At each cell, the code calculates the exact speed the air is hitting the blade. 
-*   **$U_T$ (Tangential Velocity):** The rotational speed $\Omega r$ plus the forward wind speed. (If $U_T$ is negative, the code flags it as *Reverse Flow*!)
-*   **$U_P$ (Perpendicular Velocity):** The downwash plus the vertical wind speed.
-The code calculates the Angle of Attack ($\alpha$) and the Mach number. It then goes to the VR-12 CSV tables and looks up exactly how much Lift ($C_l$) and Drag ($C_d$) that specific cell produces.
-
-**5. 2D Integration:**
-Finally, the code uses a mathematical tool called a 2D Trapezoidal Integrator (`np.trapezoid`) to sum up all the tiny forces from all 2,160 cells. It spits out the final total Thrust, Torque, Roll Moment, and Pitch Moment for the entire aircraft.
+**5. 2D Integration & Tip-Loss:**
+Prandtl's tip-loss function $F(r)$ is applied to account for 3D spanwise flow:
+$$ F(r) = \frac{2}{\pi}\arccos(e^{-f}), \quad f = \frac{N_b}{2} \frac{1 - r/R}{(r/R) \sin\phi} $$
+The total thrust $T$ is integrated using the 2D Periodic Trapezoidal Rule over the entire domain:
+$$ T = \frac{N_b}{2\pi} \int_{0}^{2\pi} \int_{R_{\text{root}}}^{R} \frac{1}{2}\rho (U_T^2 + U_P^2) c (C_l \cos\phi - C_d \sin\phi) F(r) \, dr \, d\psi $$
 
 ---
 
 ## 3.1 Recovery of Milestone 1 Limiting Cases
-**The Goal:** We must mathematically prove that our massive 2D edgewise solver isn't broken. If we set the sideways wind to exactly 0 m/s (Hover), the complex 2D code should collapse and give the exact same answer as the simple 1D code from Milestone 1.
+**The Goal:** Prove that the 2D edgewise solver mathematically reduces to the 1D axisymmetric solver when $V_{\text{edge}} = 0$.
 
 ### Graph 3.1(a) and 3.1(b): Spanwise Thrust & Power Loading
-*   **X-axis (Both Graphs):** `Radial Station r [m]`. This represents the physical length of the blade, starting from the hub root cutout ($r = 0.5$ m) all the way to the blade tip ($r = 4.58$ m).
-*   **Y-axis (Left Graph - 3.1a):** `Rotor Annulus Thrust Loading dT/dr [N/m]`. This tells you how many Newtons of upward lift are being generated by every 1-meter chunk of the blade. 
-    *   *Why the curve looks like a mountain:* Near the root ($r < 2$), the blade is moving too slowly ($\Omega r$) to generate much lift. The lift peaks at around $r = 3.5$ m because the blade is moving very fast. However, right at the tip ($r > 4$), the lift crashes to zero. This is the **Prandtl Tip-Loss Effect**—high-pressure air underneath the blade escapes around the tip to the top, killing the lift.
-*   **Y-axis (Right Graph - 3.1b):** `Rotor Annulus Shaft Power Loading dP/dr [kW/m]`. This is the physical engine power (Torque $\times$ RPM) required to drag that specific chunk of the blade through the air.
-*   **The Legend Labels & Lines:**
-    *   `Solid Black Line:` **Milestone 1 (1D) Hover.** This is the baseline truth.
-    *   `Dashed Red Line:` **Milestone 2 (2D) Hover.** Notice how it perfectly overlays the black line! The legend says `(\Delta T = 0.0050%)`. This tiny error proves our 2D mesh grids and 2D integration math are flawless.
-    *   `Solid Blue Line:` **Milestone 1 (1D) Axial Cruise.** Airplane mode.
-    *   `Dashed Cyan Line:` **Milestone 2 (2D) Axial Cruise.** It perfectly overlays the blue line `(\Delta P = 0.0037%)`. Note that these cruise curves are much lower than the hover curves because, in airplane mode, the wings are holding the aircraft up, so the rotors are pitched down to produce less thrust.
+*   **X-axis:** `Radial Station r [m]`.
+*   **Y-axis:** Thrust Loading $dT/dr$ [N/m] and Power Loading $dP/dr$ [kW/m].
+    *   *Mathematical Cause of the Curve:* The curve drops sharply to zero at the tip due to the Prandtl Tip-Loss function $F(r) \to 0$ as $r \to R$.
+*   **The Results:** 
+    *   `Dashed Red Line` (2D Hover) perfectly overlays the `Solid Black Line` (1D Hover) with an error of $\Delta T = 0.0050\%$.
+    *   `Dashed Cyan Line` (2D Cruise) perfectly overlays the `Solid Blue Line` (1D Cruise) with an error of $\Delta P = 0.0037\%$. This proves the azimuthal integration introduces zero spurious drift.
 
 ---
 
 ## 3.2 Azimuthal Loading & Periodicity
-**The Goal:** Visualize the aerodynamic chaos that happens when the helicopter flies forward at 60 m/s ($V_{\text{edge}}$).
-
-### Graph 3.2(a): Sectional Thrust Heatmap (Contour Map)
-*   **The Axes:** Physical X and Y coordinates in meters from the center hub. $Y > 0$ (the right side) is the **Advancing Side**. $Y < 0$ (the left side) is the **Retreating Side**.
-*   **The Colorbar:** Represents $dF_z/dr$ (Lift intensity). Deep Red means massive lift (over 10,000 N/m). Deep Blue means zero or negative lift.
-*   **The Physics:** You can clearly see a massive red blob on the right side and a blue void on the left. Because the helicopter is flying forward at 60 m/s, the right blade is spinning *into* the wind (experiencing hurricane-force airspeed), while the left blade is spinning *away* from the wind.
-
 ### Graph 3.2(b): 2$\pi$ Periodic Blade Loading
-*   **X-axis:** `Azimuth Angle \psi [deg]`. This tracks a single blade as it rotates. $0^\circ$ is over the tail. $90^\circ$ is advancing on the right. $180^\circ$ is over the nose. $270^\circ$ is retreating on the left.
-*   **Y-axis:** `Integrated Sectional Thrust T(\psi) [kN]`. We integrated the lift along the blade radius to find the total lifting force of *one single blade* at that exact moment in the rotation.
-*   **The Physics:** The line traces a massive sine wave. The graph explicitly labels that at $90^\circ$ (Advancing), the blade generates **56.6 kN** of lift. At $270^\circ$ (Retreating), it generates only **0.6 kN**. Because the right side is lifting 90x harder than the left side, it creates a massive torque ($-127.9$ kN-m Roll Moment) that tries to violently flip the aircraft over.
+*   **Y-axis:** Integrated Sectional Thrust $T(\psi) = \int_{R_{\text{root}}}^R \frac{dF_z}{dr} \, dr$.
+*   **The Physics:** The curve takes the form of a heavily skewed $1\text{P}$ (once-per-revolution) harmonic. At $\psi=90^\circ$, $U_T = \Omega r + V_{\text{edge}}$. At $\psi=270^\circ$, $U_T = \Omega r - V_{\text{edge}}$. Since Lift $\propto U_T^2$, this squaring effect creates the massive $56.6$ kN vs $0.6$ kN asymmetry, generating a violent roll moment $M_X$.
 
 ---
 
 ## 3.3 Reverse Flow, Stall, and Mach Limits
-**The Goal:** Map the physical boundaries where the aerodynamics break down in fast forward flight.
-
 ### Graph 3.3(1): The Reverse Flow Boundary
-*   **The Plot:** Shows a contour map of $U_T$ (Tangential Velocity). 
-*   **The Black Circle:** This line traces exactly where $U_T = 0$. Inside this circle on the left (retreating) side, $U_T$ is negative. 
-*   **The Physics:** The helicopter is flying forward at 60 m/s. But near the root of the blade, the rotation speed ($\Omega r$) is only 20 m/s. Since the blade is spinning backward at 20 m/s but the helicopter is moving forward at 60 m/s, the wind actually hits the *trailing edge* (the back) of the blade at 40 m/s! Our code detects this and flips the airfoil data backward.
+*   **The Math:** Reverse flow occurs strictly when the tangential velocity is negative ($U_T \le 0$). Solving $U_T(r, \psi) = \Omega r + V_{\text{edge}}\sin\psi = 0$ yields the geometric boundary of a circle on the retreating side:
+$$ r(\psi) = -\mu R \sin\psi $$
+*   **The Physics:** Inside this circle, air strikes the trailing edge. The solver applies the Viterna-Corrigan $360^\circ$ extrapolation to flip the $C_l$ and $C_d$ signs.
 
 ### Graph 3.3(2): The Stall Boundary (The Figure-8)
-*   **The Plot:** A contour map of Angle of Attack ($|\alpha|$). 
-*   **The Red Zone:** Shaded where $|\alpha| \ge 15.8^\circ$ (the VR-12 airfoil stall limit).
-*   **The Physics:** It forms a bizarre "Figure-8" shape because the rotor is stalling in two places for two totally different reasons:
-    1.  **The Left Lobe (Retreating Stall):** The blade is moving so slowly (due to reverse flow) that the downwash creates a massive, catastrophic inflow angle, causing the blade to instantly stall.
-    2.  **The Right Lobe (Advancing Root Stall):** Our tiltrotor blades have a severe $-30^\circ$ twist built into them (so they can act like airplane propellers later). This means the root is permanently pitched up to $33.5^\circ$. On the advancing side, the root is moving too slowly to push the inflow angle down, so it simply catches too much air and stalls.
+*   **The Math:** Shaded where $|\alpha| = |\theta - \phi| \ge 15.8^\circ$.
+*   **The Physics:** The two lobes occur because $\alpha$ blows up for different reasons. Left Lobe (Retreating): $U_T \to 0$, causing $\phi = \arctan(U_P/U_T) \to 90^\circ$. Right Lobe (Advancing Root): Large built-in twist ($\theta_{\text{root}} = 33.5^\circ$) coupled with low local $\Omega r$ causes $\alpha$ to exceed stall before $\phi$ can reduce it.
 
 ### Graph 3.3(3): Advancing Tip Mach Number
-*   **The Plot:** A contour map of the local Mach number ($M$).
-*   **The Labels:** Shows contours for $M = 0.75$ and $M = 0.84$.
-*   **The Physics:** At the extreme right edge ($90^\circ$ tip), the blade's rotation speed adds to the helicopter's forward speed. The tip velocity approaches the speed of sound ($M = 0.84$). This crosses the crucial Drag Divergence boundary ($M_{dd} = 0.75$), meaning shockwaves form on the blade, adding massive Wave Drag to the engine power requirements.
+*   **The Math:** $M = \frac{\sqrt{U_T^2 + U_P^2}}{a_{sound}}$. Contours highlight the $M = 0.75$ Drag Divergence ($M_{dd}$) boundary and the peak $M = 0.84$ location at $(r=R, \psi=90^\circ)$.
 
 ---
 
-## 3.4 Discretization Sensitivity (The Grid Size)
-**The Goal:** Prove we didn't just guess our 2D grid size ($30 \times 72$). We ran a massive loop testing dozens of grid sizes to find the perfect balance between speed and accuracy.
-
-*   **Top Graphs (Radial $N_r$):** The X-axis is the number of radial rings (from 8 to 80). The Y-axis is the total Thrust and Torque output. The blue line shows the mathematical error slowly dropping as we add more rings. We placed a Red Dashed line at $N_r = 30$. Why does it take 30 rings to stabilize? Because the code needs a dense cluster of tiny slices to accurately map the sharp "Prandtl tip-loss cliff" at the edge of the blade.
-*   **Bottom Graphs (Azimuthal $N_\psi$):** The X-axis is the number of pie-slices around the circle. The blue line stabilizes almost instantly (at just 12 slices). Why? Because the lift around the circle is a perfectly smooth sine wave (as we saw in Graph 3.2b). Our integration math (`np.trapezoid`) is mathematically flawless at summing up sine waves, so it converges to 99.9% accuracy almost instantly! We just chose $N_\psi = 72$ to make the contour maps look high-resolution.
+## 3.4 Discretization Sensitivity
+*   **Radial $N_r$:** Convergence is slow and asymptotic (requires $N_r \ge 30$). The strict requirement is driven by the spatial resolution needed to evaluate the steep gradient of $dF_z/dr \to 0$ near $r=R$ caused by the $\arccos$ in the Prandtl tip-loss function.
+*   **Azimuthal $N_\psi$:** Convergence is practically instantaneous ($N_\psi \ge 12$). The aerodynamic loading over the azimuth is dominated by $1\text{P}$ and $2\text{P}$ trigonometric harmonics ($\sin\psi, \cos\psi$). The Periodic Trapezoidal Rule used in the solver exhibits exponential (spectral) convergence for perfectly periodic functions.
