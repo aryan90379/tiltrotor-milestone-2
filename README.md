@@ -191,3 +191,18 @@ m_{\text{fuel}}(t + \Delta t) = m_{\text{fuel}}(t) - \text{SFC} \cdot P_{\text{r
 $$
 
 * The results prove the transition schedule perfectly navigates the conversion corridor without violating any aerodynamic or control limits.
+
+---
+
+## Section 4.6: Consolidated Observations (Summary Table)
+
+*This table synthesizes the physical phenomena observed in Sections 3 and 4, perfectly formatted for your final presentation slide.*
+
+| Observation | Physical cause | Evidence (plot/section) | Design implication |
+|---|---|---|---|
+| **Advancing/Retreating Asymmetry** | Forward speed adds to advancing blade velocity and subtracts from retreating blade ($U_T = \Omega r + V \sin\psi$). | Sec 3.2 (56 kN right vs 0.6 kN left) & Sec 4.1 (Massive $M_X$ Roll moment). | Requires longitudinal cyclic pitch ($\theta_{1s}$) to feather blades and balance lift, preventing rollover. |
+| **Control Coupling** | Changing pitch at one azimuth affects lift 90° later due to aerodynamic phase lag and gyroscopic precession. | Sec 4.2 & 4.3 (Sweeping $\theta_{1s}$ and $\theta_{1c}$ both create complex interlinked pitch/roll moments). | The 6-DOF trim solver must mathematically couple all inputs; pilot cannot just move one stick independently. |
+| **Reverse Flow** | At high forward speeds, wind passes through the rotor faster than the retreating blade is spinning backward ($U_T < 0$). | Sec 3.3 (Reverse flow circle plotted on retreating side, $r(\psi) = -\mu R \sin\psi$). | Retreating blade produces reverse lift/drag; limits the maximum forward speed in helicopter mode. |
+| **Stall Onset (Figure-8)** | Retreating side stalls due to low airspeed/high pitch. Advancing root stalls due to severe $-30^\circ$ built-in blade twist catching too much air. | Sec 3.3 (Figure-8 $\alpha > 15.8^\circ$ contour) & Sec 4.1 (Unstalled area crashing at high collective). | Limits maximum thrust capability. Sets a hard collective limit ($\theta_0 < 15^\circ$) before catastrophic stall. |
+| **Tip-Mach Limitations** | Advancing tip velocity approaches the speed of sound ($M_{tip} \approx 0.84$) in fast forward flight. | Sec 3.3 (Mach contour map hitting $M > 0.75$ drag divergence on advancing side). | Causes severe wave drag. Requires slowing down rotor RPM during forward flight (which we do during conversion). |
+| **Power Trends** | Induced power scales exponentially with thrust ($P \propto T^{1.5}$). Tilting nacelles forward shifts lift to wings, unloading rotors. | Sec 4.1 (Blue power curve rockets upward) vs Red Dashed line (Conversion flight uses much less power). | Aircraft must transition to airplane mode quickly to save fuel and stay within the 2800 kW engine limits. |
