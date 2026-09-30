@@ -1,208 +1,356 @@
-# AE 667 — Milestone 2: Technical Reference & Implementation Guide
+# Tiltrotor Aeromechanics & Mission Simulation (Milestone 2)
 
-This document is the comprehensive, highly detailed technical manual for our Python code (`milestone_2.ipynb`). It documents every physical assumption, mathematical formula, coordinate transformation, algorithmic loop, and verification metric used to solve Milestone 2. 
+This repository contains the complete 6-Degrees-of-Freedom (6-DOF) Trim Solver, Edgewise BEMT Aerodynamics Engine, and Mission Planner for a tandem tiltrotor aircraft. The documentation below serves as a highly detailed mathematical and physical walkthrough of the code and the resulting aerodynamic phenomena.
 
-You can use this document directly as a reference for writing the final report slides, as it maps exactly to the rubric sections.
+# Section 2: Algorithm Architecture & Solver Pipelines
 
----
-
-## Section 1: Coordinate Systems, Transformations, and Assumptions
-
-### 1.1 Reference Frames & Coordinate Systems
-To correctly handle the tiltrotor converting from helicopter mode ($\theta_{\text{nac}} = 90^\circ$) to airplane mode ($\theta_{\text{nac}} = 0^\circ$) while the fuselage pitches, we strictly define four reference frames:
-
-1. **Inertial Frame $\mathcal{F}_I$**: North ($X_I$), East ($Y_I$), Down ($Z_I$). Gravity acts along $+Z_I$.
-2. **Body Frame $\mathcal{F}_B$**: Origin at the Aircraft Center of Gravity (CG). 
-   - $+X_B$: Forward out the nose.
-   - $+Y_B$: Out the starboard (right) wing.
-   - $+Z_B$: Downward out the belly.
-   - The aircraft pitch attitude is $\alpha_B$. Gravity in the body frame is $\mathbf{F}_{\text{grav}, B} = mg [-\sin\alpha_B, 0, \cos\alpha_B]^T$.
-3. **Shaft / Nacelle Frame $\mathcal{F}_S$**: Origin at the rotor hub center ($\mathbf{r}_{\text{hub}, L} = [0, -b/2, -0.80]^T$ m).
-   - The nacelle tilt angle $\theta_{\text{nac}}$ rotates the shaft around the Body $Y_B$ axis.
-   - Rotation Matrix from Shaft to Body:
-     
-
-$$
-\mathbf{R}_{B \leftarrow S} = \begin{bmatrix} \cos\theta_{\text{nac}} & 0 & -\sin\theta_{\text{nac}} \\ 0 & 1 & 0 \\ \sin\theta_{\text{nac}} & 0 & \cos\theta_{\text{nac}} \end{bmatrix}
-$$
-
-4. **Azimuthal Frame $\psi$**: Tracks the rotating blade in the disk plane.
-   - $\psi = 0^\circ$: Blade pointing aft toward the tail.
-   - $\psi = 90^\circ$: Advancing blade (moving forward into the freestream).
-   - $\psi = 180^\circ$: Blade pointing forward toward the nose.
-   - $\psi = 270^\circ$: Retreating blade (moving backward away from the freestream).
-
-### 1.2 Aerodynamic & Modeling Assumptions
-1. **Rigid Disk Assumption**: Blade flapping dynamics ($\beta_0, \beta_{1c}, \beta_{1s}$) are assumed small and are not integrated dynamically in this milestone. The rotor tip-path plane is assumed strictly perpendicular to the shaft.
-2. **Glauert Skewed-Wake Inflow**: We assume the induced inflow across the disk is nonuniform due to forward flight, modeled linearly as $\lambda_i(r, \psi) = \lambda_{i0} (1 + K_x \frac{r}{R} \cos\psi)$ using Pitt-Peters gradients.
-3. **360° Airfoil Polars**: Flow reversals ($U_T < 0$) on the retreating side are handled using the Viterna-Corrigan extrapolation, flipping the chordwise lift direction.
-4. **Compressibility**: Prandtl-Glauert compressibility corrections are applied below Mach $0.75$, with wave drag penalties added when $M \ge M_{\text{crit}} = 0.75$.
+This document breaks down the core architecture of our codebase into the exact pipelines defined in the Milestone presentation. It serves as a mathematical and algorithmic roadmap for how the Aeromechanics Engine, Trim Solver, and Mission Planner function.
 
 ---
 
-## Section 2: Azimuth-Resolved Edgewise BEMT Solver (`run_edgewise_bemt`)
+## 2.1 Edgewise-Flight Performance Estimator (BEMT)
+*The 5-stage iterative solver linking non-uniform Coleman inflow with 2D blade-element dynamics.*
 
-This is the core algorithm inside Cell 4. It integrates blade element forces over the 2D rotor disk.
+### STEP 1: Inputs & Mesh
+*   **Flight Inputs:** The function receives Airspeed ($V_{\infty}$), Altitude ($h$), Body Angle of Attack ($\alpha_B$), Nacelle Tilt ($\theta_{\text{nac}}$), and Rotor RPM.
+*   **Controls:** The pilot inputs the collective ($\theta_0$) and cyclic pitches ($\theta_{1c}, \theta_{1s}$).
+*   **Frame Projection:** The incoming wind is transformed from the Aircraft Body frame into the Rotor Shaft frame using $\alpha_{\text{eff}} = \theta_{\text{nac}} - \alpha_B$.
+    *   $V_{\text{axial}} = V_{\infty} \cos(\alpha_{\text{eff}})$
+    *   $V_{\text{edge}} = V_{\infty} \sin(\alpha_{\text{eff}})$
+*   **2D Polar Mesh:** We slice the rotor disk into an optimized grid of $N_r = 30$ radial rings and $N_\psi = 72$ azimuthal slices ($\Delta\psi = 5^\circ$).
 
-### Step 2.1: Discretization
-The continuous rotor disk is meshed into $N_r = 30$ radial rings (from root cutout $r_0 = 0.46$ m to tip $R = 4.58$ m) and $N_\psi = 72$ azimuthal sectors ($\Delta\psi = 5^\circ$), creating a $30 \times 72$ 2D meshgrid (`R_grid`, `PSI_grid`).
+### STEP 2: Inflow Loop
+*   **Inflow Model:** We use the **Glauert Momentum Theory** combined with the **Pitt-Peters Skew Model** to calculate the skewed aerodynamic wake.
+*   **Fixed-Point Iteration:** Because the inflow ($\lambda_i$) depends on Thrust ($C_T$), and Thrust depends on inflow, we solve this using a `while` loop with an under-relaxation factor of $0.25$. It loops until the error drops below $\Delta\lambda_i < 10^{-5}$.
+*   **Tip-Loss & Balance:** We apply the **Prandtl Tip-Loss function $F(r)$** to account for air escaping around the tips of the blades.
+*   **Inflow Gradient:** Once the average inflow converges, we apply the longitudinal gradient ($K_x = \frac{4}{3} \frac{\mu / \lambda}{(1.2 + \mu / \lambda)}$).
 
-### Step 2.2: Free-Stream Velocity Projection
-The freestream $V_\infty$ is projected onto the tilted rotor disk. The effective shaft angle of attack is $\alpha_{\text{eff}} = \theta_{\text{nac}} - \alpha_B$.
-* **Edgewise Velocity (In-Plane)**: $V_{\text{edge}} = V_\infty \sin(\alpha_{\text{eff}})$
-* **Axial Velocity (Perpendicular)**: $V_{\text{axial}} = V_\infty \cos(\alpha_{\text{eff}})$
-* **Advance Ratios**: $\mu = \frac{V_{\text{edge}}}{\Omega R}$, and $\mu_z = \frac{V_{\text{axial}}}{\Omega R}$.
+### STEP 3: Blade Kinematics
+*   **Pitch Law (1st-Harmonic):** 
+    $$ \theta(r, \psi) = \theta_0 + \theta_{\text{tw}}\left(\frac{r}{R} - 0.75\right) + \theta_{1c} \cos\psi + \theta_{1s} \sin\psi $$
+*   **Flapping Kinematics:** We treat the rotor as a **Rigid Disk** ($\beta = 0$). No flapping dynamics are simulated.
+*   **Reverse-Flow Region:** The code scans for areas where $U_T \le 0$ (wind hitting the trailing edge) and applies the Viterna-Corrigan $360^\circ$ extrapolation.
 
-### Step 2.3: Swashplate Cyclic Kinematics
-At every mesh point $(r_i, \psi_j)$, the local blade geometric pitch $\theta$ is defined by the collective $\theta_0$, the linear twist $\theta_{\text{tw}} = -30^\circ$, and the cyclic inputs $\theta_{1c}, \theta_{1s}$:
+### STEP 4: Airfoil & Loads
+*   **Sectional Polars:** The solver calculates local Angle of Attack ($\alpha = \theta - \phi$) and queries the **Boeing-Vertol VR-12** tabular database to find Lift ($C_l$) and Drag ($C_d$).
+*   **Compressibility:** The code calculates the local Mach number ($M = U/a$). If $M > 0.75$, it applies the **Prandtl-Glauert** scaling correction.
+*   **Elemental Loads [N/m]:** We convert the coefficients into raw physical forces using $dF = \frac{1}{2}\rho U^2 c C_{(l,d)}$.
 
-$$
-\theta(r, \psi) = \theta_0 + \theta_{\text{tw}} \left( \frac{r}{R} - 0.75 \right) + \theta_{1c} \cos\psi + \theta_{1s} \sin\psi
-$$
-
-### Step 2.4: Glauert Fixed-Point Inflow Loop
-Because the rotor wake is blown backward at wake skew angle $\chi = \arctan\left(\frac{\mu}{\mu_z + \lambda_{i0}}\right)$, the rear of the disk sees more downwash. 
-The code runs a `while` loop (relaxation factor $0.20$, tolerance $10^{-5}$) to solve Glauert's quartic momentum equation:
-
-$$
-\lambda_{i0} = \frac{C_T}{2 \sqrt{\mu^2 + (\mu_z + \lambda_{i0})^2}}
-$$
-
-Once converged, the local inflow at every grid point is computed using the Pitt-Peters longitudinal gradient $K_x$:
-
-$$
-K_x = \frac{4}{3} \frac{1 - \cos\chi - 1.8\mu^2}{\sin\chi} \implies U_P(r, \psi) = \Omega R (\mu_z + \lambda_{i0}(1 + K_x \frac{r}{R} \cos\psi))
-$$
-
-### Step 2.5: Sectional Loads, Reverse Flow, and Mach Calculations
-For every cell $(r_i, \psi_j)$:
-1. **Tangential Velocity**: $U_T(r, \psi) = \Omega r + V_{\text{edge}} \sin\psi$. 
-   - If $U_T \le 0$, the cell is inside the **Reverse Flow Circle**. The code flags this and reverses the flow direction logic.
-2. **Local Mach Number**: $M = \sqrt{U_T^2 + U_P^2} / a_{\text{sound}}$.
-3. **Inflow Angle and AoA**: $\phi = \text{atan2}(U_P, U_T)$, and $\alpha = \theta - \phi$.
-4. **Airfoil Lookup**: The $C_l(\alpha, M)$ and $C_d(\alpha, M)$ values are queried from the VR-12 database. Prandtl's tip loss factor $F(r) = \frac{2}{\pi}\arccos(e^{-f})$ is applied.
-5. **Sectional Forces (N/m)**:
-   
-
-$$
-\frac{dF_z}{dr} = F(r) \frac{1}{2} \rho (U_T^2 + U_P^2) c \cdot (C_l \cos\phi - C_d \sin\phi)
-$$
-
-   
-
-$$
-\frac{dF_\psi}{dr} = F(r) \frac{1}{2} \rho (U_T^2 + U_P^2) c \cdot (C_l \sin\phi + C_d \cos\phi)
-$$
-
-### Step 2.6: Disk Integration to Hub Loads
-The code uses 2D numerical integration (`np.trapezoid` over $r$ and $\psi$) to sum the sectional forces into whole-rotor loads at the hub:
-* Thrust $T = \frac{N_b}{2\pi} \int \int \frac{dF_z}{dr} \,dr\,d\psi$
-* Torque $Q = \frac{N_b}{2\pi} \int \int \frac{dF_\psi}{dr} r \,dr\,d\psi$
-* Roll Moment $M_X = -\frac{N_b}{2\pi} \int \int \frac{dF_z}{dr} r \sin\psi \,dr\,d\psi$
-Finally, these hub loads $(T, H, Y, M_X, M_Y, Q)$ are mapped through $\mathbf{R}_{B \leftarrow S}$ into the aircraft Body Frame to give $[F_X, F_Y, F_Z]$ and $[M_X, M_Y, M_Z]$.
+### STEP 5: Integration & CG
+*   **Azimuthal Integration:** The code uses the **2D Periodic Trapezoidal Rule** to integrate forces across all $30 \times 72$ cells. 
+*   **Body Frame Transform:** A 3D Euler Rotation Matrix ($R_{B \leftarrow S}$) maps the shaft forces ($T, Q, P$) directly onto the Aircraft Center of Gravity (CG).
 
 ---
 
-## Section 3: Edgewise-Flight Verification
+## 2.2 Trim Solver
+*Bounded Trust-Region Dogleg root-finder solving 6-DOF aircraft equilibrium by matching dual counter-rotating BEMT proprotors and airframe aerodynamics.*
 
-### 3.1 Recovery of Milestone 1 Limiting Cases
-**Hypothesis**: If $V_{\text{edge}} = 0$, the complex 2D code must mathematically collapse to the simple 1D Milestone 1 code.
-**Method**: We ran the 2D code in pure Hover ($V_\infty = 0$) and pure Axial Cruise ($\theta_{\text{nac}} = 0^\circ$), keeping cyclic $\theta_{1c} = \theta_{1s} = 0$.
-**Result**: The difference between the 1D and 2D integrators is $\Delta T = 0.005\%$ and $\Delta P = 0.00002\%$. The exact overlay of $dT/dr$ and $dP/dr$ curves proves the azimuthal integration has zero spurious drift.
+### STEP 1: Conversion & Trim
+*   **Fixed Flight Inputs:** $V_\infty, h(\text{ISA}), \rho, \theta_{\text{nac}}, \text{RPM}, \text{GW}$.
+*   **Unknown Trim Vector (u):** We solve for 6 unknowns to balance 6 degrees of freedom:
+    $$ u = [\theta_0, \theta_{1s}, \theta_{1c}, \theta_{\text{pitch}}, \delta_e, \delta_a]^T $$
+*   **Control Bounds:** The solver is physically constrained: Collective $\theta_0 \in [-8^\circ, 40^\circ]$, Pitch $\theta_{\text{pitch}} \in [-12^\circ, 30^\circ]$, Elevator $\delta_e \in [-25^\circ, 25^\circ]$.
 
-### 3.2 Azimuthal Loading & Periodicity
-**Analysis**: In edgewise flight ($V_\infty = 60$ m/s, $\theta_{\text{nac}} = 75^\circ$), dynamic pressure $q \propto (\Omega r + V_\infty \sin\psi)^2$ varies wildly.
-* The advancing side ($\psi = 90^\circ$) generates a peak single-blade lift of **$56.6$ kN**.
-* The retreating side ($\psi = 270^\circ$) generates a minimum single-blade lift of **$0.6$ kN**.
-* Integrating this $1\text{P}$ ($2\pi$-periodic) asymmetric load around the disk reveals why an uncycled rotor generates a massive aerodynamic hub roll moment ($M_X = -127.9 \text{ kN}\cdot\text{m}$). This physically necessitates the use of longitudinal cyclic $\theta_{1s}$ to flatten the lift distribution.
+### STEP 2: Dual Rotor BEMT
+*   **Wingtip Proprotors:** The code mounts two engines. The Port rotor spins CCW ($k=+1$), and the Starboard rotor spins CW ($k=-1$).
+*   **Symmetric Flight:** To fly straight, the lateral cyclic ($\theta_{1c}$) and ailerons ($\delta_a$) are driven to $0$. Because the rotors are mirrored, the massive 800 kN-m Roll Moment ($M_X$) and Yaw Moment ($M_Z$) perfectly cancel each other out ($F_Y=0, M_X=0, M_Z=0$).
+*   **Wash Interference:** Downwash from the rotors onto the wings ($\Delta\alpha_{\text{wash}}$) is accounted for.
 
-### 3.3 Reverse Flow, Stall boundaries, and Mach Limits
-We extract three key physics limits directly from the 2D mesh arrays:
-1. **Reverse Flow Circle**: Traced exactly where $U_T(r, \psi) = 0$. Mathematically, this is a circle of diameter $D_{\text{rev}} = \mu R = 1.16$ m on the retreating side, enclosing 4.1% of the disk.
-2. **Two-Lobe "$\infty$" Stall Boundary**: We map all cells where $|\alpha| \ge \alpha_{\text{stall}} = 15.8^\circ$. It forms a figure-8 because:
-   - *Left Lobe ($\psi \approx 270^\circ$)*: Retreating blade stall caused by massive inflow angles $\phi$ near the reverse-flow region.
-   - *Right Lobe ($\psi \approx 90^\circ$)*: Inboard advancing blade stall. Because $\theta_{\text{tw}} = -30^\circ$, the root pitch is $\theta_{\text{root}} = 33.5^\circ$. Local $\Omega r$ is too small to lower $\alpha = 33.5^\circ - \phi$ below stall.
-3. **Advancing Tip Mach**: The sum of tip speed and forward speed pushes $M(R, 90^\circ) = 0.844$, exceeding the drag divergence Mach number $M_{dd} = 0.75$, activating wave drag on the advancing tip.
+### STEP 3: Airframe Aero
+*   **Wing Aerodynamics:** The code calculates the wing's angle of attack $\alpha_w = \theta_{\text{pitch}} - \gamma + i_w - \Delta\alpha_{\text{wash}}$. Lift and Drag are evaluated using $L_w = \frac{1}{2} \rho V_\infty^2 S_w C_{L,w}$.
+*   **Parasite Drag:** The bluff-body drag of the fuselage is calculated using the equivalent flat plate area: $D_{\text{par}} = \frac{1}{2} \rho V_\infty^2 f_{\text{eq}}$.
+*   **Empennage & Pitch Control:** The horizontal tail provides pitch stability. The dynamic pressure at the tail is reduced to $95\%$ due to the fuselage wake ($q_{\text{tail}} = q_\infty \times 0.95$).
 
-### 3.4 Discretization Sensitivity
-We looped the solver over varying mesh sizes $N_r \in [8, 80]$ and $N_\psi \in [8, 144]$ and tracked $T$ and $Q$.
-* **Radial ($N_r$)**: Convergence is driven by capturing the steep $dF/dr \to -\infty$ gradient at the tip caused by the Prandtl tip-loss function. Error drops below $0.15\%$ at $N_r \ge 30$.
-* **Azimuthal ($N_\psi$)**: Uniform trapezoidal integration of smooth $2\pi$-periodic trigonometric functions yields very rapid spectral convergence. Error drops below $0.02\%$ at $N_\psi \ge 72$ ($\Delta\psi = 5^\circ$).
+### STEP 4: Residual Vector R(u)
+*   **6-DOF Force & Moment Residuals:** The code sums all aerodynamic forces and subtracts the weight vector $W$:
+    *   $F_X: F_{X,\text{rot}} + F_{X,\text{aero}} - W \sin(\theta_{\text{pitch}}) = 0$
+    *   $F_Z: F_{Z,\text{rot}} + F_{Z,\text{aero}} - W \cos(\theta_{\text{pitch}}) = 0$
+    *   $M_Y: M_{Y,\text{rot}} - L_h l_h - D_w l_{D,w} = 0$
 
----
-
-## Section 4: Pilot-Input & Rotor-Tilt Control Sweeps
-
-To avoid recalculating the aerodynamics from scratch for the thousands of iterations needed in Sections 4, 6, 7, and 8, we pre-computed a **6D Aerodynamic Database** (`tiltrotor_rotor_database.csv`, $5,292$ grid points) spanning $(V_\infty, \alpha_{\text{eff}}, \text{RPM}, \theta_0, \theta_{1c}, \theta_{1s})$.
-
-Using `scipy.interpolate.RegularGridInterpolator`, we evaluate control sensitivities at a representative edgewise state ($V = 35$ m/s, $\theta_{\text{nac}} = 75^\circ$):
-1. **Collective Sweep ($\theta_0$)**: $F_Z$ (Lift) and $F_X$ (Propulsion) increase linearly, but Shaft Power $P$ increases quadratically (induced power $P_i \propto T^{3/2}$). Stall margin decays linearly to zero.
-2. **Longitudinal Cyclic Sweep ($\theta_{1s}$)**: By adding pitch $\Delta\theta = \theta_{1s}\sin\psi$, setting $\theta_{1s} \approx -4.2^\circ$ decreases pitch on the advancing side ($\sin 90^\circ = +1$) and increases it on the retreating side ($\sin 270^\circ = -1$), perfectly trimming the hub roll moment $M_X \to 0$ without significantly altering mean thrust.
-3. **Nacelle Sweep ($\theta_{\text{nac}}$)**: Tilting the nacelle from $90^\circ \to 0^\circ$ rotates the thrust vector from $-F_Z \to +F_X$. Because in-plane velocity $V_{\text{edge}} = V_\infty \sin\theta_{\text{nac}}$ approaches zero, the reverse-flow circle shrinks and vanishes, restoring $14^\circ$ of stall margin.
+### STEP 5: Solver & Feasibility
+*   **Root Solver:** Uses `scipy.optimize.root` (Levenberg-Marquardt or Dogleg) to drive $R(u) \to 0$.
+*   **Convergence Gate:** Requires Force residuals $< 1.0$ N and Moment residuals $< 1.0$ N-m. Usually converges in 4-7 iterations.
+*   **Feasibility Checks:** Once trimmed, the state is verified against engine limits ($P_{\text{req}} < P_{\text{avail}}$), stall limits ($\alpha_{\text{stall}} < 15.5^\circ$), and acoustic limits ($M_{\text{tip}} < 0.85$).
 
 ---
 
-## Section 5 & 6: 6-DOF Aircraft Trim Solver
+## 2.3 Mission Planner v2
+*Quasi-steady time-stepped simulation integrating corridor-guided nacelle conversion, warm-started 6-DOF trim solutions, and SFC fuel-accounting.*
 
-### 6.1 Mathematical Formulation of the Trim Problem
-For steady, unaccelerated flight, the 6-Degrees-of-Freedom (6-DOF) sum of forces and moments at the aircraft CG must equal zero:
+### STEP 1: Profile & Schedule
+*   **Mission Architecture:** Hover Takeoff ($0$ m/s, $90^\circ$) $\to$ Outbound $\to$ Cruise ($0^\circ$) $\to$ Descent $\to$ Inbound $\to$ Hover Landing.
+*   **Time-Stepped State Vector:** Every second, the state $S_k = [t_k, x_k, h_k, V_k, \gamma_k, a_k, \theta_{\text{nac}, k}, W_k, m_{\text{fuel}, k}]$ is recorded.
+*   **Conversion Corridor:** The code enforces a Cosine-blended conversion schedule, ensuring RPM maps safely from 535 (Hover) down to 400 (Cruise) as the nacelles tilt from $90^\circ \to 0^\circ$.
 
-$$
-\sum \mathbf{F}_B = \mathbf{F}_{\text{wing}} + \mathbf{F}_{\text{fuse}} + \mathbf{F}_{\text{emp}} + \mathbf{F}_{\text{grav}, B} + \sum_{i=1}^2 \left[ \mathbf{R}_{B \leftarrow S_i} \mathbf{F}_{S_i} \right] = \mathbf{0}
-$$
+### STEP 2: Accel & 6-DOF Trim
+*   **Quasi-Steady Demand:** The kinematic demands $a_k = \frac{dV}{dt}$ and $\gamma_k = \arctan(\frac{dh}{dx})$ are used to inject fictitious inertial forces into the Trim Solver ($F_{\text{inertial}, X} = m a_k$).
+*   **Online Warm-Start Trim:** To ensure the simulation runs in seconds instead of hours, the Trim Solver is *warm-started* by injecting the previous time-step's solution ($u_{k-1}^*$) as the initial guess for the current step. This drops convergence down to 2-4 iterations.
 
-$$
-\sum \mathbf{M}_{\text{CG}} = \mathbf{M}_{\text{aero, CG}} + \sum_{i=1}^2 \left[ \mathbf{R}_{B \leftarrow S_i} \mathbf{M}_{S_i} + (\mathbf{r}_{\text{hub},i} - \mathbf{r}_{\text{CG}}) \times \mathbf{F}_{B,i} \right] = \mathbf{0}
-$$
+### STEP 3: Feasibility Gate
+*   **Active Envelope Screening:** Every single second of the flight is screened against the physical bounds defined in Section 2.2.
+*   **State Rejection Logic:** If a waypoint requires more power than the engines can produce, or stalls the rotor, the simulation rejects it and flags the constraint margin.
 
-### 6.2 Implementation of `solve_aircraft_trim_6dof`
-* **State Variables (The Pilot Inputs)**: $\mathbf{u} = [\theta_0, \theta_{1s}, \theta_{1c}, \alpha_B, \delta_e, \delta_a/\delta_r]^T$.
-* **Algorithm**: We use `scipy.optimize.least_squares` with the Trust Region Reflective (`trf`) algorithm. The optimizer is given strict physical bounds (e.g., $\theta_0 \in [0^\circ, 24^\circ]$, $\delta_e \in [-25^\circ, +25^\circ]$).
-* **Execution**: It iteratively perturbs the control vector $\mathbf{u}$, queries the 6D rotor database, computes the wing/fuselage/tail aerodynamic drag and lift using $C_L(\alpha_w)$ and $C_D(\alpha_w)$ functions, and evaluates the residual vector $\mathbf{R}(\mathbf{u})$. It converges when $\|\mathbf{R}\|_2 \le 10^{-4}$.
+### STEP 4: Power & Mass Update
+*   **Total Shaft Power:** $P_{\text{total}} = (P_{\text{rot},L} + P_{\text{rot},R}) / \eta_{\text{gb}} + P_{\text{acc}}$ (assuming a gearbox efficiency $\eta_{\text{gb}} = 0.96$).
+*   **SFC Fuel Integration:** The Turboshaft Specific Fuel Consumption (SFC) is integrated over the time-step: 
+    $$ \Delta m_{\text{fuel}, k} = \left(\frac{\text{SFC}}{3600}\right) \times P_{\text{total}}(t_k) \times \Delta t $$
+*   **Gross Weight Update:** The aircraft physically gets lighter as fuel is burned! $W_{k+1} = (W_0 - \Delta m_{\text{fuel}, k}) \times g$. This makes hovering at the end of the mission much easier than at takeoff.
 
-### 6.3 Physical Trim Trends
-The resulting 3x3 trim matrix demonstrates correct load handover:
-* **Hover ($V=20$ m/s, $\theta_{\text{nac}}=85^\circ$)**: Wing lift is negligible ($q_\infty$ is tiny). Rotors carry 89% of aircraft weight.
-* **Mid-Conversion ($V=55$ m/s, $\theta_{\text{nac}}=45^\circ$)**: Dynamic pressure increases. The wing now supports 64% of the weight, unloading the rotors and causing the required power to drop into the "Tiltrotor Power Bucket".
-* **Airplane Cruise ($V=95$ m/s, $\theta_{\text{nac}}=0^\circ$)**: Wing carries 100% of weight. Rotors provide pure axial propulsion.
-
----
-
-## Sections 7 & 8: Conversion Corridor & Mission Planner v2
-
-### 7. The Conversion Corridor Map
-By sweeping the Trim Solver across a grid of $(V_\infty, \theta_{\text{nac}})$ pairs, we map the boundaries of safe flight:
-1. **Low-Speed Boundary (Left Side)**: Limited by Wing Stall ($\alpha_w > 15^\circ$) and Rotor Collective Limit ($\theta_0 > 24^\circ$). The nacelles cannot be tilted down until the airspeed is high enough for the wing to generate lift.
-2. **High-Speed Boundary (Right Side)**: Limited by Engine Power ($P_{\text{req}} > 2800$ kW) and Advancing Tip Mach ($M > 0.88$). The nacelles must be tilted down as airspeed increases to reduce the in-plane edgewise velocity.
-
-### 8. Mission Planner v2 Time-Integration
-We simulate a full Outbound (`Hover → Airplane`) and Inbound (`Airplane → Hover`) mission segment.
-* **Euler Integration**: At each discrete time step $\Delta t = 2.0$ s, the solver trims the aircraft, computes current power $P$, and updates the state variables:
-  
-
-$$
-\dot{V} = \frac{T \cos\theta_{\text{nac}} - D}{m}, \qquad \Delta h = V \sin\gamma \Delta t
-$$
-
-  
-
-$$
-m_{\text{fuel}}(t + \Delta t) = m_{\text{fuel}}(t) - \text{SFC} \cdot P_{\text{req}} \cdot \Delta t
-$$
-
-* The results prove the transition schedule perfectly navigates the conversion corridor without violating any aerodynamic or control limits.
+### STEP 5: Kinematics & Telemetry
+*   **Trajectory Integration:** Forward Euler integration maps velocities to physical GPS coordinates: $x_{k+1} = V_k \cos(\gamma_k) \Delta t + x_k$.
+*   **Boundary Continuity:** Enforces $C_0$ state and control continuity across all flight segment boundaries (no teleporting or jerky control inputs).
+*   **Telemetry Output:** Exports the complete time-history arrays for visualization in Section 8.
 
 ---
 
-## Section 4.6: Consolidated Observations (Summary Table)
+# Section 3: Code-Level Walkthrough (The Verification Suite)
 
-*This table synthesizes the physical phenomena observed in Sections 3 and 4, perfectly formatted for your final presentation slide.*
+This document explains the rigorous mathematical and aerodynamic pipeline used to generate the graphs in **Section 3 (Verification)**. 
 
-| Observation | Physical cause | Evidence (plot/section) | Design implication |
-|---|---|---|---|
-| **Advancing/Retreating Asymmetry** | Forward speed adds to advancing blade velocity and subtracts from retreating blade ($U_T = \Omega r + V \sin\psi$). | Sec 3.2 (56 kN right vs 0.6 kN left) & Sec 4.1 (Massive $M_X$ Roll moment). | Requires longitudinal cyclic pitch ($\theta_{1s}$) to feather blades and balance lift, preventing rollover. |
-| **Control Coupling** | Changing pitch at one azimuth affects lift 90° later due to aerodynamic phase lag and gyroscopic precession. | Sec 4.2 & 4.3 (Sweeping $\theta_{1s}$ and $\theta_{1c}$ both create complex interlinked pitch/roll moments). | The 6-DOF trim solver must mathematically couple all inputs; pilot cannot just move one stick independently. |
-| **Reverse Flow** | At high forward speeds, wind passes through the rotor faster than the retreating blade is spinning backward ($U_T < 0$). | Sec 3.3 (Reverse flow circle plotted on retreating side, $r(\psi) = -\mu R \sin\psi$). | Retreating blade produces reverse lift/drag; limits the maximum forward speed in helicopter mode. |
-| **Stall Onset (Figure-8)** | Retreating side stalls due to low airspeed/high pitch. Advancing root stalls due to severe $-30^\circ$ built-in blade twist catching too much air. | Sec 3.3 (Figure-8 $\alpha > 15.8^\circ$ contour) & Sec 4.1 (Unstalled area crashing at high collective). | Limits maximum thrust capability. Sets a hard collective limit ($\theta_0 < 15^\circ$) before catastrophic stall. |
-| **Tip-Mach Limitations** | Advancing tip velocity approaches the speed of sound ($M_{tip} \approx 0.84$) in fast forward flight. | Sec 3.3 (Mach contour map hitting $M > 0.75$ drag divergence on advancing side). | Causes severe wave drag. Requires slowing down rotor RPM during forward flight (which we do during conversion). |
-| **Power Trends** | Induced power scales exponentially with thrust ($P \propto T^{1.5}$). Tilting nacelles forward shifts lift to wings, unloading rotors. | Sec 4.1 (Blue power curve rockets upward) vs Red Dashed line (Conversion flight uses much less power). | Aircraft must transition to airplane mode quickly to save fuel and stay within the 2800 kW engine limits. |
+---
+
+## The Theory: How "Edgewise BEMT" Actually Works
+The `run_edgewise_bemt` function is the core physics engine of Milestone 2. In edgewise flight, the rotor disk experiences an asymmetric velocity field. The code solves this using a 5-step Blade Element Momentum Theory (BEMT) pipeline.
+
+**1. The 2D Mesh Grid & Velocity Decomposition:**
+The continuous rotor disk is discretized into a 2D mesh grid with $N_r = 30$ radial rings and $N_\psi = 72$ azimuthal sectors.
+The incoming free-stream velocity $V_\infty$ is decomposed onto the tilted rotor disk (where $\alpha_{\text{eff}} = \theta_{\text{nac}} - \alpha_{\text{body}}$):
+$$ V_{\text{edge}} = V_\infty \sin(\alpha_{\text{eff}}) \quad \text{(In-plane velocity)} $$
+$$ V_{\text{axial}} = V_\infty \cos(\alpha_{\text{eff}}) \quad \text{(Perpendicular velocity)} $$
+The advance ratios are defined as $\mu = V_{\text{edge}} / (\Omega R)$ and $\mu_z = V_{\text{axial}} / (\Omega R)$.
+
+**2. The Swashplate Kinematics:**
+For every cell $(r, \psi)$, the local geometric blade pitch is determined by the collective ($\theta_0$), built-in twist ($\theta_{\text{tw}}$), and cyclic inputs ($\theta_{1c}, \theta_{1s}$):
+$$ \theta(r, \psi) = \theta_0 + \theta_{\text{tw}}\left(\frac{r}{R} - 0.75\right) + \theta_{1c}\cos\psi + \theta_{1s}\sin\psi $$
+
+**3. The Glauert & Pitt-Peters Inflow Model:**
+Due to the skewed wake in forward flight ($\chi = \arctan(\frac{\mu}{\mu_z + \lambda_{i0}})$), the induced downwash is asymmetric. The code uses a fixed-point `while` loop to solve Glauert's momentum equation for the mean inflow $\lambda_{i0}$:
+$$ \lambda_{i0} = \frac{C_T}{2 \sqrt{\mu^2 + (\mu_z + \lambda_{i0})^2}} $$
+Once converged, the Pitt-Peters longitudinal gradient $K_x$ is applied to skew the downwash toward the rear of the disk:
+$$ K_x = \frac{4}{3} \frac{1 - \cos\chi - 1.8\mu^2}{\sin\chi} $$
+
+**4. Local Aerodynamic Environment ($U_T, U_P$):**
+The local velocity components hitting the blade element are calculated as:
+$$ U_T(r, \psi) = \Omega r + V_{\text{edge}}\sin\psi \quad \text{(Tangential)} $$
+$$ U_P(r, \psi) = \Omega R \left( \mu_z + \lambda_{i0}\left(1 + K_x \frac{r}{R}\cos\psi\right) \right) \quad \text{(Perpendicular)} $$
+The local angle of attack is $\alpha = \theta - \phi$, where the inflow angle is $\phi = \arctan(U_P / U_T)$.
+The Mach number is evaluated as $M = \frac{\sqrt{U_T^2 + U_P^2}}{a}$. These variables query the VR-12 airfoil tables for $C_l$ and $C_d$.
+
+**5. 2D Integration & Tip-Loss:**
+Prandtl's tip-loss function $F(r)$ is applied to account for 3D spanwise flow:
+$$ F(r) = \frac{2}{\pi}\arccos(e^{-f}), \quad f = \frac{N_b}{2} \frac{1 - r/R}{(r/R) \sin\phi} $$
+The total thrust $T$ is integrated using the 2D Periodic Trapezoidal Rule over the entire domain:
+$$ T = \frac{N_b}{2\pi} \int_{0}^{2\pi} \int_{R_{\text{root}}}^{R} \frac{1}{2}\rho (U_T^2 + U_P^2) c (C_l \cos\phi - C_d \sin\phi) F(r) \, dr \, d\psi $$
+
+---
+
+## 3.1 Recovery of Milestone 1 Limiting Cases
+**The Goal:** Prove that the 2D edgewise solver mathematically reduces to the 1D axisymmetric solver when $V_{\text{edge}} = 0$.
+
+### Graph 3.1(a) and 3.1(b): Spanwise Thrust & Power Loading
+*   **X-axis:** `Radial Station r [m]`.
+*   **Y-axis:** Thrust Loading $dT/dr$ [N/m] and Power Loading $dP/dr$ [kW/m].
+    *   *Mathematical Cause of the Curve:* The curve drops sharply to zero at the tip due to the Prandtl Tip-Loss function $F(r) \to 0$ as $r \to R$.
+*   **The Results:** 
+    *   `Dashed Red Line` (2D Hover) perfectly overlays the `Solid Black Line` (1D Hover) with an error of $\Delta T = 0.0050\%$.
+    *   `Dashed Cyan Line` (2D Cruise) perfectly overlays the `Solid Blue Line` (1D Cruise) with an error of $\Delta P = 0.0037\%$. This proves the azimuthal integration introduces zero spurious drift.
+
+---
+
+## 3.2 Azimuthal Loading & Periodicity
+**The Goal:** Visualize the extreme aerodynamic asymmetry that occurs when the helicopter flies forward at 60 m/s ($V_{\text{edge}}$), creating the "Dissymmetry of Lift".
+
+### Graph 3.2(a): Normal Sectional Load Contour $dF_z/dr$ [N/m]
+*   **The Plot:** A top-down heatmap of the rotor disk. The center is the hub ($r=0$), and the outer edge is the blade tip ($r=4.58$ m). 
+    *   **The Root Cutout:** If you look at the exact dead-center intersection of the gray crosshairs, there is a tiny, empty uncolored hole. That empty void is the Root Cutout ($r = 0.46$ m), representing the solid metal hub where no aerodynamic blade exists.
+    *   **The Thick White Dashed Circle (Left Side):** This is the **Reverse Flow Boundary** ($U_T = 0$). Inside this white dashed circle, the helicopter is flying forward so fast that the 30 m/s wind is actually blowing *backwards* over the retreating blade! This is exactly why the area inside that dashed circle is dark blue/purple—the lift has violently crashed and actually gone negative!
+*   **The Math:** This plots the vertical force distribution:
+$$ \frac{dF_z}{dr} = \frac{1}{2}\rho (U_T^2 + U_P^2) c (C_l \cos\phi - C_d \sin\phi) F(r) $$
+*   **The Physics:** You can clearly see a massive red "hotspot" on the right side (the Advancing Side, $\psi = 90^\circ$). Here, the blade's rotation speed ($\Omega r$) adds directly to the helicopter's forward speed ($V_{\infty}$), resulting in a massive tangential velocity ($U_T$). Since Lift scales with $U_T^2$, the lift explodes. Conversely, the left side (Retreating, $\psi = 270^\circ$) is dark blue because the speeds subtract, killing the lift.
+
+### Graph 3.2(b): In-Plane Torque Load Contour $dF_\psi/dr$ [N/m]
+*   **The Plot:** A top-down heatmap showing the in-plane drag forces trying to slow the rotor down.
+*   **The Math:** This plots the horizontal force distribution:
+$$ \frac{dF_\psi}{dr} = \frac{1}{2}\rho (U_T^2 + U_P^2) c (C_l \sin\phi + C_d \cos\phi) F(r) $$
+*   **The Physics:** Notice that the drag is also heavily biased to the advancing right side. The engine has to fight through this asymmetric "wall of air" on the right side every time a blade spins through it. The integration of this contour gives us the total Shaft Torque ($Q$).
+
+### Graph 3.2(c): Azimuthal 2π Periodicity & Roll Moment Origin
+*   **X-axis:** Blade Azimuth Angle $\psi$ [deg]. The graph tracks a single blade across two full revolutions ($0^\circ \to 720^\circ$).
+*   **Y-axis:** Integrated Single-Blade Thrust $T_{\text{blade}}(\psi) = \int_{R_{\text{root}}}^R \frac{dF_z}{dr} \, dr$.
+*   **The Physics:** This graph perfectly summarizes the physics of the contour maps. The thrust forms a heavily skewed $1\text{P}$ (once-per-revolution) harmonic sine wave. 
+    *   At the **Advancing Sector** (Yellow highlight, $\psi=90^\circ$), the single blade generates a peak lift of **56.6 kN**.
+    *   At the **Retreating Sector** (Red highlight, $\psi=270^\circ$), the lift crashes to a minimum of **0.6 kN**.
+    *   Because the right side lifts 90x harder than the left side, it physically generates the massive $-127.9$ kN-m Roll Moment ($M_X$) that tries to violently flip the aircraft over. This proves why cyclic pitch is strictly required for forward flight!
+
+## 3.3 Reverse Flow, Stall, and Mach Limits
+**The Goal:** Map the physical boundaries where the aerodynamics break down in fast forward flight. 
+
+### Graph 3.3(a): The Reverse Flow Boundary
+*   **The Plot:** Shows a contour map of the Tangential Velocity ($U_T$). A thick dashed black circle is drawn exactly where $U_T = 0$.
+*   **The Math:** Reverse flow occurs strictly when $U_T \le 0$. Solving the velocity equation $U_T(r, \psi) = \Omega r + V_{\text{edge}}\sin\psi = 0$ yields the geometric boundary of a perfect circle on the retreating side:
+$$ r(\psi) = -\mu R \sin\psi $$
+*   **The Physics:** The helicopter is flying forward at 60 m/s. But near the root of the blade, the rotation speed ($\Omega r$) is only 20 m/s. Because the blade is spinning backward at 20 m/s but the helicopter is moving forward at 60 m/s, the wind actually hits the *trailing edge* (the sharp back) of the blade at 40 m/s! 
+*   **The Code Solution:** Inside this circle, standard airfoil tables break down. The solver applies the **Viterna-Corrigan $360^\circ$ extrapolation**, a mathematical trick that allows the code to calculate lift and drag even when the air hits the wing completely backward.
+
+### Graph 3.3(b): The Stall Boundary (The Figure-8)
+*   **The Plot:** A contour map of the local Angle of Attack ($\alpha$). A thick **Green Contour Line** is drawn wherever $|\alpha| \ge 15.8^\circ$, perfectly outlining the regions that have exceeded the VR-12 airfoil stall limit.
+*   **The Physics:** It forms a bizarre "Figure-8" (or $\infty$) shape because the rotor is stalling in two places for two totally different reasons:
+    1.  **The Left Lobe (Retreating Stall):** On the left side, the blade is moving so slowly (due to reverse flow) that the downward wind (downwash, $U_P$) hits it almost completely vertically. This causes the inflow angle to approach $90^\circ$ ($\phi = \arctan(U_P/U_T) \to 90^\circ$), causing a massive, catastrophic stall.
+    2.  **The Right Lobe (Advancing Root Stall):** Tiltrotor blades have a severe $-30^\circ$ twist built into them (so they can act like airplane propellers later). This means the root is permanently pitched up to an extreme $33.5^\circ$. On the advancing side, the root simply catches too much air and stalls before the inflow angle can reduce it.
+
+### Graph 3.3(c): Advancing Tip Mach Number
+*   **The Plot:** A contour map of the local Mach number.
+*   **The Math:** $M = \frac{\sqrt{U_T^2 + U_P^2}}{a_{\text{sound}}}$. A **Yellow Dash-Dot Contour Line** specifically highlights the $M = 0.75$ Drag Divergence ($M_{dd}$) boundary and the peak $M = 0.84$ location at the extreme right tip ($r=R, \psi=90^\circ$).
+*   **The Physics:** At the extreme right edge, the blade's rotation speed adds to the helicopter's forward speed. The tip velocity approaches the speed of sound ($M = 0.84$). 
+*   **The Design Implication:** Crossing the $M = 0.75$ boundary means shockwaves are forming on the blade, causing massive Wave Drag. This is the primary physical reason helicopters cannot fly faster than ~200 mph! To go faster, our tiltrotor must tilt its engines forward and slow down its RPM (which we do during Conversion).
+
+## 3.4 Discretization Sensitivity (Grid Size Verification)
+**The Goal:** Mathematically prove that our chosen 2D mesh grid size ($30 \times 72$) is dense enough to perfectly capture the physics without wasting computational time. We ran a massive `for` loop, testing dozens of grid sizes, and plotted the errors.
+
+### Sec 3.4 Plots 1 & 2: Radial Sensitivity ($N_r$)
+*   **The Plot:** The top two graphs show Total Thrust ($T$) and Total Torque ($Q$) on the Y-axis versus the number of radial rings ($N_r$) on the X-axis (from 8 to 80).
+*   **The Results:** Both the Thrust (blue) and Torque (red) curves take a relatively long time to level out (converge). They don't approach the true mathematical asymptote (the horizontal dotted line) until around $N_r \ge 30$.
+*   **The Physics / Math Cause:** Why is it so slow to converge? Because of the **Prandtl Tip-Loss function**. At the extreme outer edge of the blade ($r \to R$), the lift literally drops off a mathematical cliff. If your radial grid isn't dense enough, the code will accidentally draw a smooth hill instead of a sharp cliff, massively overestimating the thrust. We placed our Red Dashed line at $N_r = 30$ because it is dense enough to accurately map that cliff with less than $0.14\%$ error.
+
+### Sec 3.4 Plots 3 & 4: Azimuthal Sensitivity ($N_\psi$)
+*   **The Plot:** The bottom two graphs show Thrust and Torque versus the number of pie-slices around the circle ($N_\psi$).
+*   **The Results:** Look at the curves—they crash straight down and perfectly hit the asymptote almost instantly! The math stabilizes at just $N_\psi \ge 12$. 
+*   **The Physics / Math Cause:** Why does it converge so fast? Because as the blade spins around the circle, the lift changes in a perfectly smooth, predictable wave (dominated by $1\text{P}$ and $2\text{P}$ trigonometric harmonics like $\sin\psi$ and $\cos\psi$). The specific mathematical integration method we used (the **Periodic Trapezoidal Rule**) exhibits what mathematicians call *Exponential Spectral Convergence* when applied to perfectly smooth, periodic sine waves. It solves them flawlessly with very few slices. We chose $N_\psi = 72$ (Red Dashed line) not for accuracy, but just to make the contour heatmaps in Section 3.2 look smooth and pretty!
+
+
+
+
+
+---
+
+# Section 4: Parametric Sweeps & Database Architecture
+
+This document breaks down the mathematical foundation of the 6D Aerodynamic Database and the equations governing the pilot-input parametric sweeps in **Section 4**.
+
+---
+
+## Part 1: The 6D Aerodynamic Database Architecture
+To enable real-time 6-DOF aircraft trimming in later sections, the BEMT solver was executed offline $5,292$ times to populate `tiltrotor_rotor_database.csv`.
+
+**The Transformation Equations:**
+The BEMT solver calculates forces and moments in the **Shaft Frame ($S$)**. To plot them in Section 4, they are transformed into the **Aircraft Body Frame ($B$)** using the nacelle tilt angle $\theta_{\text{nac}}$:
+$$ \mathbf{R}_{B \leftarrow S} = \begin{bmatrix} \cos\theta_{\text{nac}} & 0 & -\sin\theta_{\text{nac}} \\ 0 & 1 & 0 \\ \sin\theta_{\text{nac}} & 0 & \cos\theta_{\text{nac}} \end{bmatrix} $$
+$$ \begin{bmatrix} F_X \\ F_Y \\ F_Z \end{bmatrix}_{\text{Body}} = \mathbf{R}_{B \leftarrow S} \begin{bmatrix} H \\ Y \\ -T \end{bmatrix}_{\text{Shaft}} $$
+
+**The Integral Equations inside the Database:**
+*   **Thrust ($T$):** $$ T = \frac{N_b}{2\pi} \int_{0}^{2\pi} \int_{R_{\text{root}}}^{R} \frac{dF_z}{dr} \, dr \, d\psi $$
+*   **Roll Moment ($M_X$):** Induced heavily by the advancing/retreating lift asymmetry.
+    $$ M_X = - \frac{N_b}{2\pi} \int_{0}^{2\pi} \int_{R_{\text{root}}}^{R} \left( \frac{dF_z}{dr} \right) r \sin\psi \, dr \, d\psi $$
+*   **Pitch Moment ($M_Y$):** Induced by fore/aft lift asymmetry.
+    $$ M_Y = - \frac{N_b}{2\pi} \int_{0}^{2\pi} \int_{R_{\text{root}}}^{R} \left( \frac{dF_z}{dr} \right) r \cos\psi \, dr \, d\psi $$
+*   **Shaft Power ($P_{\text{req}}$):** Derived from the in-plane aerodynamic drag torque ($Q$).
+    $$ Q = \frac{N_b}{2\pi} \int_{0}^{2\pi} \int_{R_{\text{root}}}^{R} \left( \frac{dF_\psi}{dr} \right) r \, dr \, d\psi \implies P_{\text{req}} = Q \cdot \Omega $$
+
+---
+
+## ## Part 2: The Parametric Sweeps (Rows 1 to 3)
+
+### The Two Flight States (Solid vs. Dashed)
+Every graph in this section plots two distinct aircraft states simultaneously to compare them:
+*   **Solid Lines (Helicopter Mode):** Nacelles pointing straight up ($90^\circ$), $V=30$ m/s, High RPM (535).
+*   **Dashed Lines (Intermediate Conversion):** Nacelles tilted half-forward ($45^\circ$), $V=60$ m/s, Low RPM (400). Because the engines are tilted $45^\circ$, the rotors now act partially like airplane propellers, generating massive Forward Thrust ($F_X$) alongside Vertical Lift ($F_Z$), while offloading weight to the wings to save Power.
+
+The goal of Section 4 is to prove that our aerodynamic code responds correctly to pilot inputs before we hand the model over to the 6-DOF Trim Solver. We sweep each of the three main rotor controls (Collective, Longitudinal Cyclic, and Lateral Cyclic) from $-10^\circ$ to $+10^\circ$ while freezing the others.
+
+### Row 1: The 4.1 Collective Sweep ($\theta_0$)
+**The Control:** The collective pitch ($\theta_0$) physically rotates all 3 blades up or down by the exact same amount simultaneously. The pitch equation shifts uniformly:
+$$ \theta(r, \psi) = \theta_0 + \theta_{\text{tw}}\left(\frac{r}{R} - 0.75\right) + \theta_{1c} \cos\psi + \theta_{1s} \sin\psi $$
+
+This row contains 4 specific graphs detailing the aircraft's response to Collective input:
+
+**Graph 1: Body Forces [kN]**
+*   **X-axis:** Collective Pitch $\theta_0$ ($0^\circ \to 25^\circ$).
+*   **Y-axis:** Force [kN] in the Body Frame.
+*   **The Lines & Physics:** 
+    *   **Solid Red Line (Helicopter $F_Z$):** Plummets downward linearly. In our coordinate system, $Z$ points DOWN. So a highly negative $F_Z$ means the rotor is generating massive upward Lift! 
+    *   **Solid Blue Line (Helicopter $F_X$):** Stays perfectly flat at zero. In pure helicopter mode ($90^\circ$), pulling collective only lifts you up, it does not push you forward.
+    *   **Dashed Blue Line (Conversion $F_X$):** Explodes upward into the positive! Because the engines are tilted $45^\circ$ forward, pulling collective now acts like an airplane propeller, yanking the aircraft violently forward.
+    *   **Dashed Red Line (Conversion $F_Z$):** Goes downward, but much less steeply than the solid red line. Since the engines are tilted $45^\circ$, half of the thrust vector is being wasted on pushing the aircraft forward instead of lifting it up.
+
+**Graph 2: Body Moments about CG [kN-m]**
+*   **X-axis:** Collective Pitch $\theta_0$.
+*   **Y-axis:** Moment [kN-m] in the Body Frame.
+*   **The Lines & Physics:**
+    *   **Solid Purple Line (Helicopter $M_X$):** Explodes massively into the positive. This beautifully illustrates the **Dissymmetry of Lift**. The advancing side grabs the extra collective pitch and multiplies it by the forward airspeed, generating exponentially more lift than the retreating side. This tries to violently roll the helicopter!
+    *   **Dashed Orange Line (Conversion $M_Y$):** Goes negative (Nose Down pitch). Because the engines are tilted $45^\circ$, pulling collective generates massive forward thrust ($F_X$). Because the engines are mounted on the wingtips *above* the Center of Gravity, pushing forward from the top makes the nose pitch down.
+
+**Graph 3: Rotor Shaft Power [kW]**
+*   **X-axis:** Collective Pitch $\theta_0$.
+*   **Y-axis:** Required Shaft Power [kW].
+*   **The Lines & Physics:**
+    *   **Solid Blue Line (Helicopter):** Takes a severe, non-linear parabolic shape. According to Momentum Theory, Induced Power relates to Thrust by $P_i \propto T^{3/2}$. As the collective (Graph 1) pushes thrust up linearly, aerodynamic drag and induced power explode exponentially.
+    *   **Dashed Red Line (Conversion):** Stays perfectly flat at 0 kW, then skyrockets. Why doesn't it cost any power at low pitch? 
+        *   **Windmill Mode ($0^\circ \to 10^\circ$):** In Conversion, the aircraft is flying fast (60 m/s) with the engines tilted $45^\circ$ forward. At low pitch, the blades are relatively flat. The incoming 60 m/s wind hits the blades and pushes them around on its own, just like a windmill! Because the wind is doing the work to keep the blades spinning at 400 RPM, the turboshaft engine doesn't have to provide any torque (0 kW). *(Note: While this costs 0 power, Graph 1 shows you are also generating 0 Lift, meaning the helicopter is in freefall!).*
+        *   **Propeller Mode ($15^\circ+$):** As you pull the collective up, the blades angle sharply to bite into the air and generate lift/thrust. This creates massive aerodynamic drag trying to stop the blades from spinning. To keep them spinning at 400 RPM against that huge drag, the engine must suddenly kick in and burn fuel, causing the power curve to explode!
+
+**Graph 4: Unstalled Disk Area [%]**
+*   **X-axis:** Collective Pitch $\theta_0$.
+*   **Y-axis:** Percentage of the rotor disk that is NOT stalled.
+*   **The Lines & Physics:**
+    *   **Solid Blue Line (Helicopter):** Notice how the line actually *increases* from 87% up to 95% before it crashes! Why? At exactly $0^\circ$ collective, the blades are totally flat, meaning the 30 m/s wind is actually hitting the *top* of the retreating blades, causing a small "negative" stall. Pulling the collective to $5^\circ$ tilts the blades up just enough to perfectly catch the wind, pushing the rotor into its most efficient, 95% clean aerodynamic zone. But once you pull past $10^\circ$, the angle gets too steep, triggering a massive "positive" stall that crashes the line. 
+    *   **Dashed Red Line (Conversion):** Starts deeply stalled (35%) and actually *improves* as you pull collective! Why? At low collective ($0^\circ$), the fast $60$ m/s wind is hitting the *top* of the tilted blades (a massive negative angle of attack), causing a negative stall. As you pull collective up, you increase the blade pitch into the clean, positive aerodynamic region.
+
+### Row 2: The 4.2 Longitudinal Cyclic Sweep ($\theta_{1s}$)
+**The Control:** Longitudinal cyclic applies a sine-wave variation to the blade pitch as it spins: $\Delta\theta = \theta_{1s} \sin\psi$. Because $\sin(90^\circ) = 1$ and $\sin(270^\circ) = -1$, this control strictly changes the pitch on the left and right sides of the helicopter.
+
+**Graph 5: Body Forces [kN]**
+*   **The Lines & Physics:** Notice that the Thrust lines ($F_Z$, Red) stay perfectly flat horizontally. This proves **Thrust Decoupling**. Because we are mathematically adding pitch to the right side and subtracting the exact same amount of pitch from the left side, the total average lift of the helicopter remains completely unchanged. You can move the joystick without suddenly gaining or losing altitude!
+
+**Graph 6: Body Moments about CG [kN-m]**
+*   **The Lines & Physics:**
+    *   **Solid Purple Line ($M_X$ Roll):** Stays massively high (around 800 kN-m) and slopes downward slightly as $\theta_{1s}$ increases. Why doesn't it cross zero? Because the single rotor being tested in Section 4 is mathematically mounted on the **Port (Left) Wingtip**. The engine is generating $-80$ kN of upward lift at a distance of $-10$ meters from the Center of Gravity. $(-80 \text{ kN} \times -10 \text{ m} = +800 \text{ kN-m})$. That massive purple line is literally just the left engine lifting the left wing! The cyclic stick actively changes the aerodynamic roll moment of the disk (causing the $\pm 100$ kN-m slope), but it will never cross zero because the engine is still holding up the wing. (In the real tiltrotor in Section 6, the Starboard engine generates $-800$ kN-m to perfectly cancel this out).
+    *   **The "Rigid Rotor" Control Anomaly:** Notice that the Orange Line ($M_Y$ Pitch) stays totally flat! In a real helicopter, longitudinal cyclic pitches the nose up or down. But here, the stick strictly alters the Purple line (Roll). Why? Because our code uses a **Rigid Disk** ($\beta = 0$, no flapping hinges). Without hinges, there is no $90^\circ$ gyroscopic phase delay. The lift changes on the left and right sides exactly where the pitch is applied, causing pure Roll!
+
+**Graph 7: Rotor Shaft Power [kW]**
+*   **X-axis:** Longitudinal Cyclic $\theta_{1s}$.
+*   **Y-axis:** Required Shaft Power [kW].
+*   **The Lines & Physics:** 
+    *   **Solid Blue Line (Helicopter):** Forms a steady upward slope, increasing from roughly 1300 kW to 1600 kW. As you push the stick forward (positive $\theta_{1s}$), you are actively adding blade pitch to the advancing right side of the rotor. Because that side is already flying into a 30 m/s headwind, adding pitch to it causes a massive spike in aerodynamic drag, forcing the engine to work much harder.
+    *   **Dashed Red Line (Conversion):** Forms a much steeper upward slope (from 0 to over 600 kW). In conversion mode, the aircraft is flying even faster (60 m/s). Pushing the stick forward forces the advancing side to take a massive bite out of that 60 m/s wind, which creates extreme drag and violently spikes the engine power.
+
+**Graph 8: Unstalled Disk Area [%]**
+*   **X-axis:** Longitudinal Cyclic $\theta_{1s}$.
+*   **Y-axis:** Percentage of the rotor disk that is NOT stalled.
+*   **The Lines & Physics:** 
+    *   **Solid Blue Line (Helicopter):** Notice that the line slopes *upward* from 85% at $-6^\circ$ to peak at 87% at $0^\circ$. At $-6^\circ$, the retreating side is pitched too high and experiencing localized stall. As you bring the stick back to the center ($0^\circ$), you remove that extreme pitch, "healing" the stall and increasing the clean area to 87%. But as you push the stick forward past $0^\circ$, you add extreme pitch to the advancing side, forcing it past the $15.8^\circ$ limit and crashing the clean area down to 74%.
+    *   **Dashed Red Line (Conversion):** Plummets in a straight line as you push the stick forward. In conversion mode, the wind is already hitting the tilted blades at a weird angle. Forcing the cyclic pitch higher aggressively stalls the advancing blade.
+
+### Row 3: The 4.3 Lateral Cyclic Sweep ($\theta_{1c}$)
+**The Control:** Lateral cyclic applies a cosine-wave variation to the blade pitch: $\Delta\theta = \theta_{1c} \cos\psi$. Because $\cos(180^\circ) = -1$ (Nose) and $\cos(0^\circ) = 1$ (Tail), this control strictly alters the lift at the front and rear of the rotor disk.
+
+**Graph 9: Body Forces [kN]**
+*   **X-axis:** Lateral Cyclic $\theta_{1c}$.
+*   **Y-axis:** Force [kN] in the Body Frame.
+*   **The Lines & Physics:** 
+    *   **Solid & Dashed Lines:** The Thrust lines ($F_Z$, Red) remain mostly flat, hovering around -90 kN and -80 kN. Because we are adding lift to the nose and subtracting from the tail, the total average lift remains relatively stable. You can pitch the aircraft up and down without accidentally gaining massive altitude.
+
+**Graph 10: Body Moments about CG [kN-m]**
+*   **X-axis:** Lateral Cyclic $\theta_{1c}$.
+*   **Y-axis:** Moment [kN-m] in the Body Frame.
+*   **The Lines & Physics:** 
+    *   **Solid & Dashed Orange Lines ($M_Y$ Pitch):** Both cross zero with a steep positive slope. By altering the front/rear lift distribution, the pilot can actively pitch the nose of the aircraft up or down in both Helicopter and Conversion modes.
+    *   **The Rigid Rotor Swap:** In a real helicopter, Lateral Cyclic is used to Roll left and right. But because of our rigid disk assumption, Lateral Cyclic gives us pure Pitch control! The controls are perfectly swapped by $90^\circ$!
+    *   **Solid Purple Line ($M_X$ Roll):** Stays completely flat at +800 kN-m. Again, this proves the Port wingtip lever-arm physics. Using lateral cyclic changes lift front/back, which has absolutely zero effect on the massive left/right roll moment!
+
+**Graph 11: Rotor Shaft Power [kW]**
+*   **X-axis:** Lateral Cyclic $\theta_{1c}$.
+*   **Y-axis:** Required Shaft Power [kW].
+*   **The Lines & Physics:** 
+    *   **Solid Blue Line (Helicopter):** Forms a steep, straight upward slope from 1150 kW to 1800 kW. As you pull the stick to pitch the aircraft, you are adding extreme pitch to the tail of the rotor disk. This creates a massive lift asymmetry, and that asymmetric drag means maneuvering the aircraft costs extreme engine power.
+    *   **Dashed Red Line (Conversion):** Forms a very flat, shallow slope near 200 kW. Because the wings are providing most of the lift in conversion mode, pitching the aircraft nose up/down with the rotors creates significantly less aerodynamic drag than doing it in helicopter mode.
+
+**Graph 12: Unstalled Disk Area [%]**
+*   **X-axis:** Lateral Cyclic $\theta_{1c}$.
+*   **Y-axis:** Percentage of the rotor disk that is NOT stalled.
+*   **The Lines & Physics:** 
+    *   **Solid Blue Line (Helicopter):** Notice the massive *increase* as the stick moves from $-6^\circ$ to $0^\circ$! 
+        *   At $-6^\circ$ (pulling stick backward), the math adds extreme positive pitch to the *Nose* of the rotor. Because the Nose is taking the full, brutal force of the 30 m/s headwind, pitching it up forces it instantly past the $15.8^\circ$ stall limit, crashing the clean area to 72%.
+        *   As you move the stick back to the center ($0^\circ$), you remove that extreme nose pitch. The nose "un-stalls" and the clean area shoots back up to 87%!
+        *   When you push the stick forward ($+6^\circ$), it adds pitch to the *Tail*. Because the tail is shielded in the messy wake of the rotor, pitching it up doesn't cause nearly as severe of a stall, so the line stays relatively high at 86%.
+    *   **Dashed Red Line (Conversion):** Remains completely flat and stable around 84%. Because the airspeed is high (60 m/s) and the rotor is tilted and unloaded, altering the front/back lift distribution doesn't cause any severe stalling!
+

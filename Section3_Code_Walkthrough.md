@@ -81,21 +81,21 @@ $$ \frac{dF_\psi}{dr} = \frac{1}{2}\rho (U_T^2 + U_P^2) c (C_l \sin\phi + C_d \c
 **The Goal:** Map the physical boundaries where the aerodynamics break down in fast forward flight. 
 
 ### Graph 3.3(a): The Reverse Flow Boundary
-*   **The Plot:** Shows a contour map of the Tangential Velocity ($U_T$). A thick black circle is drawn exactly where $U_T = 0$.
+*   **The Plot:** Shows a contour map of the Tangential Velocity ($U_T$). A thick dashed black circle is drawn exactly where $U_T = 0$.
 *   **The Math:** Reverse flow occurs strictly when $U_T \le 0$. Solving the velocity equation $U_T(r, \psi) = \Omega r + V_{\text{edge}}\sin\psi = 0$ yields the geometric boundary of a perfect circle on the retreating side:
 $$ r(\psi) = -\mu R \sin\psi $$
 *   **The Physics:** The helicopter is flying forward at 60 m/s. But near the root of the blade, the rotation speed ($\Omega r$) is only 20 m/s. Because the blade is spinning backward at 20 m/s but the helicopter is moving forward at 60 m/s, the wind actually hits the *trailing edge* (the sharp back) of the blade at 40 m/s! 
 *   **The Code Solution:** Inside this circle, standard airfoil tables break down. The solver applies the **Viterna-Corrigan $360^\circ$ extrapolation**, a mathematical trick that allows the code to calculate lift and drag even when the air hits the wing completely backward.
 
 ### Graph 3.3(b): The Stall Boundary (The Figure-8)
-*   **The Plot:** A contour map of the absolute Angle of Attack ($|\alpha|$). The red zone is shaded wherever $|\alpha| \ge 15.8^\circ$ (the VR-12 airfoil stall limit).
+*   **The Plot:** A contour map of the local Angle of Attack ($\alpha$). A thick **Green Contour Line** is drawn wherever $|\alpha| \ge 15.8^\circ$, perfectly outlining the regions that have exceeded the VR-12 airfoil stall limit.
 *   **The Physics:** It forms a bizarre "Figure-8" (or $\infty$) shape because the rotor is stalling in two places for two totally different reasons:
     1.  **The Left Lobe (Retreating Stall):** On the left side, the blade is moving so slowly (due to reverse flow) that the downward wind (downwash, $U_P$) hits it almost completely vertically. This causes the inflow angle to approach $90^\circ$ ($\phi = \arctan(U_P/U_T) \to 90^\circ$), causing a massive, catastrophic stall.
     2.  **The Right Lobe (Advancing Root Stall):** Tiltrotor blades have a severe $-30^\circ$ twist built into them (so they can act like airplane propellers later). This means the root is permanently pitched up to an extreme $33.5^\circ$. On the advancing side, the root simply catches too much air and stalls before the inflow angle can reduce it.
 
 ### Graph 3.3(c): Advancing Tip Mach Number
 *   **The Plot:** A contour map of the local Mach number.
-*   **The Math:** $M = \frac{\sqrt{U_T^2 + U_P^2}}{a_{\text{sound}}}$. The contours specifically highlight the $M = 0.75$ Drag Divergence ($M_{dd}$) boundary and the peak $M = 0.84$ location at the extreme right tip ($r=R, \psi=90^\circ$).
+*   **The Math:** $M = \frac{\sqrt{U_T^2 + U_P^2}}{a_{\text{sound}}}$. A **Yellow Dash-Dot Contour Line** specifically highlights the $M = 0.75$ Drag Divergence ($M_{dd}$) boundary and the peak $M = 0.84$ location at the extreme right tip ($r=R, \psi=90^\circ$).
 *   **The Physics:** At the extreme right edge, the blade's rotation speed adds to the helicopter's forward speed. The tip velocity approaches the speed of sound ($M = 0.84$). 
 *   **The Design Implication:** Crossing the $M = 0.75$ boundary means shockwaves are forming on the blade, causing massive Wave Drag. This is the primary physical reason helicopters cannot fly faster than ~200 mph! To go faster, our tiltrotor must tilt its engines forward and slow down its RPM (which we do during Conversion).
 
@@ -112,5 +112,5 @@ $$ r(\psi) = -\mu R \sin\psi $$
 *   **The Results:** Look at the curves—they crash straight down and perfectly hit the asymptote almost instantly! The math stabilizes at just $N_\psi \ge 12$. 
 *   **The Physics / Math Cause:** Why does it converge so fast? Because as the blade spins around the circle, the lift changes in a perfectly smooth, predictable wave (dominated by $1\text{P}$ and $2\text{P}$ trigonometric harmonics like $\sin\psi$ and $\cos\psi$). The specific mathematical integration method we used (the **Periodic Trapezoidal Rule**) exhibits what mathematicians call *Exponential Spectral Convergence* when applied to perfectly smooth, periodic sine waves. It solves them flawlessly with very few slices. We chose $N_\psi = 72$ (Red Dashed line) not for accuracy, but just to make the contour heatmaps in Section 3.2 look smooth and pretty!
 
-8993189931
+
 
