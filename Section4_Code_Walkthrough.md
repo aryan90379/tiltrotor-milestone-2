@@ -27,13 +27,13 @@ $$ \begin{bmatrix} F_X \\ F_Y \\ F_Z \end{bmatrix}_{\text{Body}} = \mathbf{R}_{B
 
 The goal of Section 4 is to prove that our aerodynamic code responds correctly to pilot inputs before we hand the model over to the 6-DOF Trim Solver. We sweep each of the three main rotor controls (Collective, Longitudinal Cyclic, and Lateral Cyclic) from $-10^\circ$ to $+10^\circ$ while freezing the others.
 
-### Row 1: The 4.1 Collective Sweep ($\theta_0$)
-**The Control:** The collective pitch ($	heta_0$) physically rotates all 3 blades up or down by the exact same amount simultaneously. The pitch equation shifts uniformly: $\theta(r, \psi) = \theta_0 + \dots$
+### Row 1: The 4.1 Collective Sweep ($\t\theta_0$)
+**The Control:** The collective pitch ($	\theta_0$) physically rotates all 3 blades up or down by the exact same amount simultaneously. The pitch equation shifts uniformly: $\theta(r, \psi) = \t\theta_0 + \dots$
 
-*   **Thrust Curve (Graph 1):** Thrust increases almost perfectly linearly with Collective pitch. This makes physical sense because increasing $\theta_0$ linearly increases the Angle of Attack ($\alpha$) everywhere on the disk, directly scaling the Lift coefficient ($C_l = a_0 \alpha$).
+*   **Thrust Curve (Graph 1):** Thrust increases almost perfectly linearly with Collective pitch. This makes physical sense because increasing $\t\theta_0$ linearly increases the Angle of Attack ($\alpha$) everywhere on the disk, directly scaling the Lift coefficient ($C_l = a_0 \alpha$).
 *   **Power Curve (Graph 3):** Unlike Thrust, the blue Power curve takes a severe, non-linear parabolic shape. 
     *   *The Physics:* According to Momentum Theory, the Induced Power ($P_i$) required to generate Thrust ($T$) is defined as $P_i = \frac{T \sqrt{T}}{\sqrt{2 \rho A}} \propto T^{3/2}$. As the collective pushes the thrust up linearly, the aerodynamic drag and induced power explode exponentially.
-*   **Stall Area (Graph 4):** As $\theta_0 > 15^\circ$, the local Angle of Attack ($\alpha = \theta - \phi$) exceeds the VR-12 static stall limit ($15.8^\circ$) across the vast majority of the rotor disk. The green line crashes downward, indicating that less than 85% of the disk is generating clean lift.
+*   **Stall Area (Graph 4):** As $\t\theta_0 > 15^\circ$, the local Angle of Attack ($\alpha = \theta - \phi$) exceeds the VR-12 static stall limit ($15.8^\circ$) across the vast majority of the rotor disk. The green line crashes downward, indicating that less than 85% of the disk is generating clean lift.
 
 ### Row 2: The 4.2 Longitudinal Cyclic Sweep ($\theta_{1s}$)
 **The Control:** Longitudinal cyclic applies a sine-wave variation to the blade pitch as it spins: $\Delta\theta = \theta_{1s} \sin\psi$. Because $\sin(90^\circ) = 1$ and $\sin(270^\circ) = -1$, this control strictly changes the pitch on the left and right sides of the helicopter.
