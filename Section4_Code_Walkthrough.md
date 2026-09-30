@@ -67,7 +67,7 @@ This row contains 4 specific graphs detailing the aircraft's response to Collect
 *   **X-axis:** Collective Pitch $\theta_0$.
 *   **Y-axis:** Percentage of the rotor disk that is NOT stalled.
 *   **The Lines & Physics:**
-    *   **Solid Blue Line (Helicopter):** Stays high (90%) until about $\theta_0 = 10^\circ$, then violently crashes downward. The collective pushes the entire blade too high, exceeding the static stall limit ($15.8^\circ$) across the vast majority of the rotor disk. 
+    *   **Solid Blue Line (Helicopter):** Notice how the line actually *increases* from 87% up to 95% before it crashes! Why? At exactly $0^\circ$ collective, the blades are totally flat, meaning the 30 m/s wind is actually hitting the *top* of the retreating blades, causing a small "negative" stall. Pulling the collective to $5^\circ$ tilts the blades up just enough to perfectly catch the wind, pushing the rotor into its most efficient, 95% clean aerodynamic zone. But once you pull past $10^\circ$, the angle gets too steep, triggering a massive "positive" stall that crashes the line. 
     *   **Dashed Red Line (Conversion):** Starts deeply stalled (35%) and actually *improves* as you pull collective! Why? At low collective ($0^\circ$), the fast $60$ m/s wind is hitting the *top* of the tilted blades (a massive negative angle of attack), causing a negative stall. As you pull collective up, you increase the blade pitch into the clean, positive aerodynamic region.
 
 ### Row 2: The 4.2 Longitudinal Cyclic Sweep ($\theta_{1s}$)
@@ -92,7 +92,7 @@ This row contains 4 specific graphs detailing the aircraft's response to Collect
 *   **X-axis:** Longitudinal Cyclic $\theta_{1s}$.
 *   **Y-axis:** Percentage of the rotor disk that is NOT stalled.
 *   **The Lines & Physics:** 
-    *   **Solid Blue Line (Helicopter):** Peaks at roughly 87% in the center, and crashes down to 74% as you push the stick forward. Adding that extreme pitch to the advancing side forces the blades past their VR-12 stall limit ($15.8^\circ$), causing a massive dynamic stall on the right side of the disk.
+    *   **Solid Blue Line (Helicopter):** Notice that the line slopes *upward* from 85% at $-6^\circ$ to peak at 87% at $0^\circ$. At $-6^\circ$, the retreating side is pitched too high and experiencing localized stall. As you bring the stick back to the center ($0^\circ$), you remove that extreme pitch, "healing" the stall and increasing the clean area to 87%. But as you push the stick forward past $0^\circ$, you add extreme pitch to the advancing side, forcing it past the $15.8^\circ$ limit and crashing the clean area down to 74%.
     *   **Dashed Red Line (Conversion):** Plummets in a straight line as you push the stick forward. In conversion mode, the wind is already hitting the tilted blades at a weird angle. Forcing the cyclic pitch higher aggressively stalls the advancing blade.
 
 ### Row 3: The 4.3 Lateral Cyclic Sweep ($\theta_{1c}$)
@@ -123,7 +123,8 @@ This row contains 4 specific graphs detailing the aircraft's response to Collect
 *   **X-axis:** Lateral Cyclic $\theta_{1c}$.
 *   **Y-axis:** Percentage of the rotor disk that is NOT stalled.
 *   **The Lines & Physics:** 
-    *   **Solid Blue Line (Helicopter):** Notice how asymmetric this graph is! It peaks at 87% in the center, drops slightly to 86% on the right, but violently crashes down to 72% on the left side! Why? 
-        *   When you pull the stick backward (negative $\theta_{1c}$), the math adds extreme positive pitch to the *Nose* of the rotor disk. Because the Nose is flying directly into the 30 m/s headwind, pitching it up instantly forces it past the $15.8^\circ$ stall limit, crashing the unstalled area.
-        *   When you push the stick forward (positive $\theta_{1c}$), it adds pitch to the *Tail*. The tail is shielded in the wake of the rotor, so pitching it up doesn't cause nearly as much stalling, keeping the line high at 86%!
+    *   **Solid Blue Line (Helicopter):** Notice the massive *increase* as the stick moves from $-6^\circ$ to $0^\circ$! 
+        *   At $-6^\circ$ (pulling stick backward), the math adds extreme positive pitch to the *Nose* of the rotor. Because the Nose is taking the full, brutal force of the 30 m/s headwind, pitching it up forces it instantly past the $15.8^\circ$ stall limit, crashing the clean area to 72%.
+        *   As you move the stick back to the center ($0^\circ$), you remove that extreme nose pitch. The nose "un-stalls" and the clean area shoots back up to 87%!
+        *   When you push the stick forward ($+6^\circ$), it adds pitch to the *Tail*. Because the tail is shielded in the messy wake of the rotor, pitching it up doesn't cause nearly as severe of a stall, so the line stays relatively high at 86%.
     *   **Dashed Red Line (Conversion):** Remains completely flat and stable around 84%. Because the airspeed is high (60 m/s) and the rotor is tilted and unloaded, altering the front/back lift distribution doesn't cause any severe stalling!
