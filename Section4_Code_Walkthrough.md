@@ -82,27 +82,46 @@ This row contains 4 specific graphs detailing the aircraft's response to Collect
     *   **The "Rigid Rotor" Control Anomaly:** Notice that the Orange Line ($M_Y$ Pitch) stays totally flat! In a real helicopter, longitudinal cyclic pitches the nose up or down. But here, the stick strictly alters the Purple line (Roll). Why? Because our code uses a **Rigid Disk** ($\beta = 0$, no flapping hinges). Without hinges, there is no $90^\circ$ gyroscopic phase delay. The lift changes on the left and right sides exactly where the pitch is applied, causing pure Roll!
 
 **Graph 7: Rotor Shaft Power [kW]**
-*   **The Lines & Physics:** The power curve forms a shallow "U" shape. The lowest point (the bottom of the "U") is exactly at $\theta_{1s} = -4.2^\circ$. Why? Because at $-4.2^\circ$, the lift is perfectly balanced left-to-right. If you move the stick away from that balanced point, you force one side of the rotor to lift way harder than the other, which creates massive asymmetric drag. The engine has to burn extra fuel to fight that drag!
+*   **X-axis:** Longitudinal Cyclic $\theta_{1s}$.
+*   **Y-axis:** Required Shaft Power [kW].
+*   **The Lines & Physics:** 
+    *   **Solid Blue Line (Helicopter):** The power curve forms a shallow "U" shape. The lowest point (the bottom of the "U") is exactly at $\theta_{1s} \approx -4.2^\circ$. Why? Because at $-4.2^\circ$, the lift is perfectly balanced left-to-right (see Graph 6). If you move the stick away from that balanced point, you force one side of the rotor to lift way harder than the other, which creates massive asymmetric drag. The engine has to burn extra fuel to fight that drag!
+    *   **Dashed Red Line (Conversion):** Forms a steep straight line. In conversion mode, the aircraft is flying so fast (60 m/s) that the airflow physics completely change. Pushing the stick forward (positive $\theta_{1s}$) forces the advancing side to take a massive bite of the $60$ m/s wind, which creates extreme drag and forces the engine power to spike from 0 kW to over 600 kW!
 
 **Graph 8: Unstalled Disk Area [%]**
-*   **The Lines & Physics:** The blue line stays relatively flat, but dips on the extreme left and right edges. If you push the stick too far, you force one side of the disk to pitch up so high that it violently stalls.
+*   **X-axis:** Longitudinal Cyclic $\theta_{1s}$.
+*   **Y-axis:** Percentage of the rotor disk that is NOT stalled.
+*   **The Lines & Physics:** 
+    *   **Solid Blue Line (Helicopter):** Stays relatively flat (86%), but dips on the extreme left and right edges. If you push the stick too far, you force one side of the disk to pitch up so high that it violently stalls.
+    *   **Dashed Red Line (Conversion):** Plummets in a straight line as you push the stick forward. In conversion mode, the wind is already hitting the tilted blades at a weird angle. Forcing the cyclic pitch higher aggressively stalls the advancing blade.
 
 ### Row 3: The 4.3 Lateral Cyclic Sweep ($\theta_{1c}$)
 **The Control:** Lateral cyclic applies a cosine-wave variation to the blade pitch: $\Delta\theta = \theta_{1c} \cos\psi$. Because $\cos(180^\circ) = -1$ (Nose) and $\cos(0^\circ) = 1$ (Tail), this control strictly alters the lift at the front and rear of the rotor disk.
 
 **Graph 9: Body Forces [kN]**
-*   **The Lines & Physics:** Just like in Graph 5, the Thrust lines ($F_Z$) remain perfectly flat. We are adding lift to the nose and subtracting from the tail, so total average lift remains exactly the same.
+*   **X-axis:** Lateral Cyclic $\theta_{1c}$.
+*   **Y-axis:** Force [kN] in the Body Frame.
+*   **The Lines & Physics:** 
+    *   **Solid & Dashed Lines:** Just like in Graph 5, the Thrust lines ($F_Z$, Red) remain perfectly flat. We are adding lift to the nose and subtracting from the tail, so the total average lift remains exactly the same. You can pitch the aircraft up and down without accidentally gaining altitude.
 
 **Graph 10: Body Moments about CG [kN-m]**
+*   **X-axis:** Lateral Cyclic $\theta_{1c}$.
+*   **Y-axis:** Moment [kN-m] in the Body Frame.
 *   **The Lines & Physics:** 
-    *   **Solid Orange Line ($M_Y$ Pitch):** Crosses zero with a steep slope. By altering the front/rear lift distribution, we can actively pitch the nose of the aircraft up or down. 
-    *   **The Rigid Rotor Swap:** Again, in a real helicopter, Lateral Cyclic is used to Roll left and right. But because of our rigid disk assumption, Lateral Cyclic gives us pure Pitch control! The controls are perfectly swapped by $90^\circ$!
+    *   **Solid & Dashed Orange Lines ($M_Y$ Pitch):** Both cross zero with a steep slope. By altering the front/rear lift distribution, the pilot can actively pitch the nose of the aircraft up or down in both Helicopter and Conversion modes.
+    *   **The Rigid Rotor Swap:** In a real helicopter, Lateral Cyclic is used to Roll left and right. But because of our rigid disk assumption, Lateral Cyclic gives us pure Pitch control! The controls are perfectly swapped by $90^\circ$!
+    *   **Solid Purple Line ($M_X$ Roll):** Stays completely flat at +800 kN-m. Again, this proves the Port wingtip lever-arm physics. Using lateral cyclic changes lift front/back, which has zero effect on the left/right roll moment!
 
 **Graph 11: Rotor Shaft Power [kW]**
-*   **The Lines & Physics:** Forms a "V" shape with the lowest power right at $0^\circ$. If the pilot pushes the stick left or right to pitch the nose, they create a massive lift asymmetry between the front and back of the rotor. This asymmetric drag means maneuvering the aircraft always costs extra engine power.
+*   **X-axis:** Lateral Cyclic $\theta_{1c}$.
+*   **Y-axis:** Required Shaft Power [kW].
+*   **The Lines & Physics:** 
+    *   **Solid Blue Line (Helicopter):** Forms a perfect "V" shape with the lowest power right at $0^\circ$. If the pilot pushes the stick left or right to pitch the nose, they create a massive lift asymmetry between the front and back of the rotor. This asymmetric drag means maneuvering the aircraft always costs extra engine power.
+    *   **Dashed Red Line (Conversion):** A very shallow "V" shape. Because the wings are providing most of the lift in conversion mode, pitching the aircraft nose up/down with the rotors creates less extreme aerodynamic drag than in helicopter mode.
 
 **Graph 12: Unstalled Disk Area [%]**
-*   **The Lines & Physics:** Drops off very sharply at the edges. Pushing the stick too far aggressively stalls either the front or the rear of the rotor disk.
-
-9481394813
-
+*   **X-axis:** Lateral Cyclic $\theta_{1c}$.
+*   **Y-axis:** Percentage of the rotor disk that is NOT stalled.
+*   **The Lines & Physics:** 
+    *   **Solid Blue Line (Helicopter):** Forms a sharp peak at $0^\circ$ and drops off aggressively at the edges. Pushing the stick too far dynamically stalls either the front or the rear of the rotor disk.
+    *   **Dashed Red Line (Conversion):** Remains mostly flat at 84%. Because the airspeed is high (60 m/s) and the rotor is unloaded, altering the front/back lift distribution doesn't cause as severe of a stall as it does in hover.
