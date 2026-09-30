@@ -97,19 +97,18 @@ $$ r(\psi) = -\mu R \sin\psi $$
 *   **The Physics:** At the extreme right edge, the blade's rotation speed adds to the helicopter's forward speed. The tip velocity approaches the speed of sound ($M = 0.84$). 
 *   **The Design Implication:** Crossing the $M = 0.75$ boundary means shockwaves are forming on the blade, causing massive Wave Drag. This is the primary physical reason helicopters cannot fly faster than ~200 mph! To go faster, our tiltrotor must tilt its engines forward and slow down its RPM (which we do during Conversion).
 
-## 3.4 Discretization Sensitivity
-*   **Radial $N_r$:** Convergence is slow and asymptotic (requires $N_r \ge 30$). The strict requirement is driven by the spatial resolution needed to evaluate the steep gradient of $dF_z/dr \to 0$ near $r=R$ caused by the $\arccos$ in the Prandtl tip-loss function.
-*   **Azimuthal $N_\psi$:** Convergence is practically instantaneous ($N_\psi \ge 12$). The aerodynamic loading over the azimuth is dominated by $1\text{P}$ and $2\text{P}$ trigonometric harmonics ($\sin\psi, \cos\psi$). The Periodic Trapezoidal Rule used in the solver exhibits exponential (spectral) convergence for perfectly periodic functions.
+## 3.4 Discretization Sensitivity (Grid Size Verification)
+**The Goal:** Mathematically prove that our chosen 2D mesh grid size ($30 \times 72$) is dense enough to perfectly capture the physics without wasting computational time. We ran a massive `for` loop, testing dozens of grid sizes, and plotted the errors.
 
-8485284852
+### Sec 3.4 Plots 1 & 2: Radial Sensitivity ($N_r$)
+*   **The Plot:** The top two graphs show Total Thrust ($T$) and Total Torque ($Q$) on the Y-axis versus the number of radial rings ($N_r$) on the X-axis (from 8 to 80).
+*   **The Results:** Both the Thrust (blue) and Torque (red) curves take a relatively long time to level out (converge). They don't approach the true mathematical asymptote (the horizontal dotted line) until around $N_r \ge 30$.
+*   **The Physics / Math Cause:** Why is it so slow to converge? Because of the **Prandtl Tip-Loss function**. At the extreme outer edge of the blade ($r \to R$), the lift literally drops off a mathematical cliff. If your radial grid isn't dense enough, the code will accidentally draw a smooth hill instead of a sharp cliff, massively overestimating the thrust. We placed our Red Dashed line at $N_r = 30$ because it is dense enough to accurately map that cliff with less than $0.14\%$ error.
 
-8485284852
+### Sec 3.4 Plots 3 & 4: Azimuthal Sensitivity ($N_\psi$)
+*   **The Plot:** The bottom two graphs show Thrust and Torque versus the number of pie-slices around the circle ($N_\psi$).
+*   **The Results:** Look at the curves—they crash straight down and perfectly hit the asymptote almost instantly! The math stabilizes at just $N_\psi \ge 12$. 
+*   **The Physics / Math Cause:** Why does it converge so fast? Because as the blade spins around the circle, the lift changes in a perfectly smooth, predictable wave (dominated by $1\text{P}$ and $2\text{P}$ trigonometric harmonics like $\sin\psi$ and $\cos\psi$). The specific mathematical integration method we used (the **Periodic Trapezoidal Rule**) exhibits what mathematicians call *Exponential Spectral Convergence* when applied to perfectly smooth, periodic sine waves. It solves them flawlessly with very few slices. We chose $N_\psi = 72$ (Red Dashed line) not for accuracy, but just to make the contour heatmaps in Section 3.2 look smooth and pretty!
 
-8904089040
-
-8904089040
-
-8969489694
-
-8969489694
+8993189931
 
