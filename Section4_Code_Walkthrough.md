@@ -73,17 +73,36 @@ This row contains 4 specific graphs detailing the aircraft's response to Collect
 ### Row 2: The 4.2 Longitudinal Cyclic Sweep ($\theta_{1s}$)
 **The Control:** Longitudinal cyclic applies a sine-wave variation to the blade pitch as it spins: $\Delta\theta = \theta_{1s} \sin\psi$. Because $\sin(90^\circ) = 1$ and $\sin(270^\circ) = -1$, this control strictly changes the pitch on the left and right sides of the helicopter.
 
-*   **Thrust decoupling (Graph 5):** Notice that the Thrust line stays perfectly flat. Because we add pitch to the right side and subtract the exact same amount from the left side, the total average lift remains completely unchanged.
-*   **Roll Moment Cancellation (Graph 6):** This is the most important graph in the row! In forward flight, the advancing right side naturally lifts $90\times$ harder than the retreating left side, creating a massive $-127.9$ kN-m Roll Moment ($M_X$) that tries to flip the aircraft. 
-    *   *The Physics:* By setting $\theta_{1s} \approx -4.2^\circ$, we mathematically subtract pitch from the advancing right side and add it to the retreating left side. This perfectly balances the lift, bringing the purple $M_X$ line precisely to zero.
-*   **The "Rigid Rotor" Control Coupling Anomaly:** In a real helicopter with hinged blades, pushing the stick forward (longitudinal cyclic) tilts the disk forward, causing a *Pitch* moment. But look at Graph 6: our longitudinal cyclic causes pure *Roll*! Why? Because our mathematical model (per Section 1.2 assumptions) uses a **Rigid Disk** ($\beta = 0$). Without flapping hinges, there is no $90^\circ$ gyroscopic phase lag. The force happens exactly where the pitch is applied.
+**Graph 5: Body Forces [kN]**
+*   **The Lines & Physics:** Notice that the Thrust lines ($F_Z$, Red) stay perfectly flat horizontally. This proves **Thrust Decoupling**. Because we are mathematically adding pitch to the right side and subtracting the exact same amount of pitch from the left side, the total average lift of the helicopter remains completely unchanged. You can move the joystick without suddenly gaining or losing altitude!
+
+**Graph 6: Body Moments about CG [kN-m] (The Most Important Graph!)**
+*   **The Lines & Physics:**
+    *   **Solid Purple Line ($M_X$ Roll):** This line crosses exactly through zero at $\theta_{1s} \approx -4.2^\circ$. In forward flight, the advancing right side naturally generates way too much lift (Dissymmetry of Lift). By holding the stick at $-4.2^\circ$, we mathematically subtract pitch from the advancing right side and add it to the retreating left side. This perfectly balances the lift left-to-right, canceling the Roll Moment ($M_X = 0$) so the helicopter doesn't flip over!
+    *   **The "Rigid Rotor" Control Anomaly:** In a real helicopter, pushing the stick forward tilts the disk forward, pitching the nose down. But look at the Orange Line ($M_Y$ Pitch); it stays totally flat! Instead, pushing the stick forward causes pure Roll (Purple line). Why? Because our code uses a **Rigid Disk** ($\beta = 0$, no flapping hinges). Without hinges, there is no $90^\circ$ gyroscopic phase delay. The physical force happens exactly where the pitch is applied.
+
+**Graph 7: Rotor Shaft Power [kW]**
+*   **The Lines & Physics:** The power curve forms a shallow "U" shape. The lowest point (the bottom of the "U") is exactly at $\theta_{1s} = -4.2^\circ$. Why? Because at $-4.2^\circ$, the lift is perfectly balanced left-to-right. If you move the stick away from that balanced point, you force one side of the rotor to lift way harder than the other, which creates massive asymmetric drag. The engine has to burn extra fuel to fight that drag!
+
+**Graph 8: Unstalled Disk Area [%]**
+*   **The Lines & Physics:** The blue line stays relatively flat, but dips on the extreme left and right edges. If you push the stick too far, you force one side of the disk to pitch up so high that it violently stalls.
 
 ### Row 3: The 4.3 Lateral Cyclic Sweep ($\theta_{1c}$)
 **The Control:** Lateral cyclic applies a cosine-wave variation to the blade pitch: $\Delta\theta = \theta_{1c} \cos\psi$. Because $\cos(180^\circ) = -1$ (Nose) and $\cos(0^\circ) = 1$ (Tail), this control strictly alters the lift at the front and rear of the rotor disk.
 
-*   **Pitch Moment Control (Graph 10):** By altering the front/rear lift distribution, the mathematical integral for the Pitch Moment ($M_Y$) shifts linearly. 
-    *   *The Physics:* The orange line ($M_Y$) crosses zero with a steep slope. This proves that the Trim Solver can use $\theta_{1c}$ to actively pitch the nose of the aircraft up or down without significantly altering the total thrust or shaft power.
-*   **The Power Cost (Graph 11):** Notice that applying cyclic (either forward or backward) always increases the Required Power ($P$). Any asymmetry in the rotor disk increases the overall aerodynamic drag, meaning it costs extra engine power just to maneuver!
+**Graph 9: Body Forces [kN]**
+*   **The Lines & Physics:** Just like in Graph 5, the Thrust lines ($F_Z$) remain perfectly flat. We are adding lift to the nose and subtracting from the tail, so total average lift remains exactly the same.
 
-9145991459
+**Graph 10: Body Moments about CG [kN-m]**
+*   **The Lines & Physics:** 
+    *   **Solid Orange Line ($M_Y$ Pitch):** Crosses zero with a steep slope. By altering the front/rear lift distribution, we can actively pitch the nose of the aircraft up or down. 
+    *   **The Rigid Rotor Swap:** Again, in a real helicopter, Lateral Cyclic is used to Roll left and right. But because of our rigid disk assumption, Lateral Cyclic gives us pure Pitch control! The controls are perfectly swapped by $90^\circ$!
+
+**Graph 11: Rotor Shaft Power [kW]**
+*   **The Lines & Physics:** Forms a "V" shape with the lowest power right at $0^\circ$. If the pilot pushes the stick left or right to pitch the nose, they create a massive lift asymmetry between the front and back of the rotor. This asymmetric drag means maneuvering the aircraft always costs extra engine power.
+
+**Graph 12: Unstalled Disk Area [%]**
+*   **The Lines & Physics:** Drops off very sharply at the edges. Pushing the stick too far aggressively stalls either the front or the rear of the rotor disk.
+
+9481394813
 
