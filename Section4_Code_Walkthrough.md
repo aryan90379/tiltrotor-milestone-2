@@ -23,24 +23,32 @@ $$ \begin{bmatrix} F_X \\ F_Y \\ F_Z \end{bmatrix}_{\text{Body}} = \mathbf{R}_{B
 
 ---
 
-## Part 2: The Parametric Sweeps (Rows 1 to 3)
+## ## Part 2: The Parametric Sweeps (Rows 1 to 3)
+
+The goal of Section 4 is to prove that our aerodynamic code responds correctly to pilot inputs before we hand the model over to the 6-DOF Trim Solver. We sweep each of the three main rotor controls (Collective, Longitudinal Cyclic, and Lateral Cyclic) from $-10^\circ$ to $+10^\circ$ while freezing the others.
 
 ### Row 1: The 4.1 Collective Sweep ($\theta_0$)
-**The Control:** The collective pitch shifts the entire blade pitch up equally: $\theta(r, \psi) = \theta_0 + \dots$
-*   **Power Curve (Graph 3):** The blue curve takes a severe non-linear shape. According to Momentum Theory, Induced Power $P_i$ relates to Thrust $T$ by $P_i = \frac{T \sqrt{T}}{\sqrt{2\rho A}} \propto T^{3/2}$. As $\theta_0$ increases thrust linearly, Power explodes exponentially.
-*   **Stall Area (Graph 4):** As $\theta_0 > 15^\circ$, the local Angle of Attack $\alpha = \theta - \phi$ exceeds the VR-12 stall limit ($15.8^\circ$) across the majority of the disk, causing the unstalled area to crash below the $85\%$ safety limit.
+**The Control:** The collective pitch ($	heta_0$) physically rotates all 3 blades up or down by the exact same amount simultaneously. The pitch equation shifts uniformly: $\theta(r, \psi) = \theta_0 + \dots$
+
+*   **Thrust Curve (Graph 1):** Thrust increases almost perfectly linearly with Collective pitch. This makes physical sense because increasing $\theta_0$ linearly increases the Angle of Attack ($\alpha$) everywhere on the disk, directly scaling the Lift coefficient ($C_l = a_0 \alpha$).
+*   **Power Curve (Graph 3):** Unlike Thrust, the blue Power curve takes a severe, non-linear parabolic shape. 
+    *   *The Physics:* According to Momentum Theory, the Induced Power ($P_i$) required to generate Thrust ($T$) is defined as $P_i = \frac{T \sqrt{T}}{\sqrt{2 \rho A}} \propto T^{3/2}$. As the collective pushes the thrust up linearly, the aerodynamic drag and induced power explode exponentially.
+*   **Stall Area (Graph 4):** As $\theta_0 > 15^\circ$, the local Angle of Attack ($\alpha = \theta - \phi$) exceeds the VR-12 static stall limit ($15.8^\circ$) across the vast majority of the rotor disk. The green line crashes downward, indicating that less than 85% of the disk is generating clean lift.
 
 ### Row 2: The 4.2 Longitudinal Cyclic Sweep ($\theta_{1s}$)
-**The Control:** Longitudinal cyclic applies a $\sin\psi$ variation to the blade pitch: $\Delta\theta = \theta_{1s}\sin\psi$.
-*   **Roll Moment Cancellation (Graph 6):** Because $\sin(90^\circ) = 1$ and $\sin(270^\circ) = -1$, setting $\theta_{1s} \approx -4.2^\circ$ mathematically subtracts pitch from the advancing right side and adds it to the retreating left side. 
-*   **The Physics:** By doing this, the integral equation for $M_X$ perfectly balances out, bringing the purple $M_X$ line precisely to zero. This demonstrates control decoupling in a rigid rotor system.
+**The Control:** Longitudinal cyclic applies a sine-wave variation to the blade pitch as it spins: $\Delta\theta = \theta_{1s} \sin\psi$. Because $\sin(90^\circ) = 1$ and $\sin(270^\circ) = -1$, this control strictly changes the pitch on the left and right sides of the helicopter.
+
+*   **Thrust decoupling (Graph 5):** Notice that the Thrust line stays perfectly flat. Because we add pitch to the right side and subtract the exact same amount from the left side, the total average lift remains completely unchanged.
+*   **Roll Moment Cancellation (Graph 6):** This is the most important graph in the row! In forward flight, the advancing right side naturally lifts $90\times$ harder than the retreating left side, creating a massive $-127.9$ kN-m Roll Moment ($M_X$) that tries to flip the aircraft. 
+    *   *The Physics:* By setting $\theta_{1s} \approx -4.2^\circ$, we mathematically subtract pitch from the advancing right side and add it to the retreating left side. This perfectly balances the lift, bringing the purple $M_X$ line precisely to zero.
+*   **The "Rigid Rotor" Control Coupling Anomaly:** In a real helicopter with hinged blades, pushing the stick forward (longitudinal cyclic) tilts the disk forward, causing a *Pitch* moment. But look at Graph 6: our longitudinal cyclic causes pure *Roll*! Why? Because our mathematical model (per Section 1.2 assumptions) uses a **Rigid Disk** ($\beta = 0$). Without flapping hinges, there is no $90^\circ$ gyroscopic phase lag. The force happens exactly where the pitch is applied.
 
 ### Row 3: The 4.3 Lateral Cyclic Sweep ($\theta_{1c}$)
-**The Control:** Lateral cyclic applies a $\cos\psi$ variation to the blade pitch: $\Delta\theta = \theta_{1c}\cos\psi$.
-*   **Pitch Moment Control (Graph 10):** Because $\cos(180^\circ) = -1$ and $\cos(0^\circ) = 1$, this control alters the lift at the front and rear of the rotor disk. 
-*   **The Physics:** By altering the front/rear lift distribution, the integral equation for $M_Y$ shifts linearly. The orange line ($M_Y$) crosses zero and allows the Trim Solver to actively pitch the nose of the aircraft up or down without significantly altering total thrust or shaft power.
+**The Control:** Lateral cyclic applies a cosine-wave variation to the blade pitch: $\Delta\theta = \theta_{1c} \cos\psi$. Because $\cos(180^\circ) = -1$ (Nose) and $\cos(0^\circ) = 1$ (Tail), this control strictly alters the lift at the front and rear of the rotor disk.
 
-8485284852
+*   **Pitch Moment Control (Graph 10):** By altering the front/rear lift distribution, the mathematical integral for the Pitch Moment ($M_Y$) shifts linearly. 
+    *   *The Physics:* The orange line ($M_Y$) crosses zero with a steep slope. This proves that the Trim Solver can use $\theta_{1c}$ to actively pitch the nose of the aircraft up or down without significantly altering the total thrust or shaft power.
+*   **The Power Cost (Graph 11):** Notice that applying cyclic (either forward or backward) always increases the Required Power ($P$). Any asymmetry in the rotor disk increases the overall aerodynamic drag, meaning it costs extra engine power just to maneuver!
 
-8485284852
+9145991459
 
