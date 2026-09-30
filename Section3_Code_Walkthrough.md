@@ -53,7 +53,7 @@ $$ T = \frac{N_b}{2\pi} \int_{0}^{2\pi} \int_{R_{\text{root}}}^{R} \frac{1}{2}\r
 ---
 
 ## 3.2 Azimuthal Loading & Periodicity
-### Graph 3.2(b): 2$\pi$ Periodic Blade Loading
+### Graph 3.2(b): 2π Periodic Blade Loading
 *   **Y-axis:** Integrated Sectional Thrust $T(\psi) = \int_{R_{\text{root}}}^R \frac{dF_z}{dr} \, dr$.
 *   **The Physics:** The curve takes the form of a heavily skewed $1\text{P}$ (once-per-revolution) harmonic. At $\psi=90^\circ$, $U_T = \Omega r + V_{\text{edge}}$. At $\psi=270^\circ$, $U_T = \Omega r - V_{\text{edge}}$. Since Lift $\propto U_T^2$, this squaring effect creates the massive $56.6$ kN vs $0.6$ kN asymmetry, generating a violent roll moment $M_X$.
 
