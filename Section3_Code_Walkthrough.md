@@ -35,10 +35,12 @@ The Mach number is evaluated as $M = \frac{\sqrt{U_T^2 + U_P^2}}{a}$.
 To convert the local environment ($\alpha$, $M$) into lift and drag ($C_l, C_d$), the `AirfoilDatabase.evaluate` function dynamically switches between three aerodynamic models:
 *   **Clean Flow (XFOIL Tabular Lookup):** For normal flight angles ($-15^\circ \le \alpha \le +20^\circ$), it uses a 2D Bivariate Spline to instantly look up the exact Lift and Drag from pre-computed **Boeing-Vertol VR-12** aerodynamic tables based on the local Reynolds Number.
 *   **Compressibility (Prandtl-Glauert):** To simulate massive wave drag, the code applies the Prandtl-Glauert scaling law ($\beta = \sqrt{1 - M^2}$) to the tabular data, physically capturing the drag spike near the speed of sound.
-*   **Reverse Flow & Deep Stall (Viterna-Corrigan $360^\circ$ Extrapolation):** XFOIL tables crash if you ask them for lift when the wind is blowing backwards! If the blade enters Reverse Flow or Deep Stall ($\alpha > 20^\circ$), the code instantly throws away the tables and falls back to the **Viterna-Corrigan flat-plate approximation**:
+*   **Reverse Flow & Deep Stall (Viterna-Corrigan $360^\circ$ Extrapolation):** 
+    *What is it and why did we use it?* Wind tunnels and XFOIL simulations cannot easily calculate aerodynamics when a wing is flying perfectly backwards or sideways at 60 m/s. If you ask the tabular database for Lift at $\alpha = 180^\circ$ (Reverse Flow), the math simply crashes. To fix this, the aerospace industry (and our code) uses the **Viterna-Corrigan Method**—an algorithm originally developed by NASA to model wind turbines operating in extreme deep stall. 
+    If the blade enters Reverse Flow or Deep Stall ($\alpha > 20^\circ$ or $\alpha < -15^\circ$), the code instantly throws away the XFOIL tables and mathematically models the blade as a blunt **flat plate** using these $360^\circ$ sine-wave approximations:
     $$ C_{L,\text{stall}} = (C_{L,\text{max}} \times 0.95) \sin(2\alpha) $$
     $$ C_{D,\text{stall}} = 0.015 + 1.25 \sin^2(\alpha) $$
-    This flawlessly blends standard aerodynamics into a $360^\circ$ analytical model, saving the simulation from crashing when flying through extreme crosswinds!
+    This flawlessly blends the standard tabular aerodynamics into a robust $360^\circ$ analytical model. Because $\sin(2\times180^\circ) = 0$, the lift correctly zeroes out when flying perfectly backward, saving the simulation from crashing!
 
 **6. 2D Integration & Tip-Loss:**
 Prandtl's tip-loss function $F(r)$ is applied to account for 3D spanwise flow:
