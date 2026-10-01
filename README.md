@@ -137,7 +137,7 @@ The local angle of attack is $\alpha = \theta - \phi$, where the inflow angle is
 The Mach number is evaluated as $M = \frac{\sqrt{U_T^2 + U_P^2}}{a}$.
 
 **5. The Airfoil Physics Engine:**
-To convert the local environment ($lpha$, $M$) into lift and drag ($C_l, C_d$), the `AirfoilDatabase.evaluate` function dynamically switches between three aerodynamic models:
+To convert the local environment ($\alpha$, $M$) into lift and drag ($C_l, C_d$), the `AirfoilDatabase.evaluate` function dynamically switches between three aerodynamic models:
 *   **Clean Flow (XFOIL Tabular Lookup):** For normal flight angles ($-15^\circ \le \alpha \le +20^\circ$), it uses a 2D Bivariate Spline to instantly look up the exact Lift and Drag from pre-computed **Boeing-Vertol VR-12** aerodynamic tables based on the local Reynolds Number.
 *   **Compressibility (Prandtl-Glauert):** To simulate massive wave drag, the code applies the Prandtl-Glauert scaling law ($\beta = \sqrt{1 - M^2}$) to the tabular data, physically capturing the drag spike near the speed of sound.
 *   **Reverse Flow & Deep Stall (Viterna-Corrigan $360^\circ$ Extrapolation):** XFOIL tables crash if you ask them for lift when the wind is blowing backwards! If the blade enters Reverse Flow or Deep Stall ($\alpha > 20^\circ$), the code instantly throws away the tables and falls back to the **Viterna-Corrigan flat-plate approximation**:
