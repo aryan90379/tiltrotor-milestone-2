@@ -169,11 +169,11 @@ $$ T = \frac{N_b}{2\pi} \int_{0}^{2\pi} \int_{R_{\text{root}}}^{R} \frac{1}{2}\r
 ---
 
 ## 3.2 Azimuthal Loading & Periodicity
-**The Goal:** Visualize the extreme aerodynamic asymmetry that occurs when the helicopter flies forward at **$V_\infty = 60$ m/s** (with Nacelles tilted to **$\theta_{\text{nac}} = 75^\circ$**, giving an advance ratio **$\mu = 0.25$**), creating the "Dissymmetry of Lift".
+**The Goal:** Visualize the extreme aerodynamic asymmetry that occurs when the helicopter flies forward at 60 m/s ($V_{\text{edge}}$), creating the "Dissymmetry of Lift".
 
 ### Graph 3.2(a): Normal Sectional Load Contour $dF_z/dr$ [N/m]
 *   **The Plot:** A top-down heatmap of the rotor disk. The center is the hub ($r=0$), and the outer edge is the blade tip ($r=4.58$ m). 
-    *   **The Thick White Dashed Circle (Left Side):** If you look at the exact center of the crosshairs, you'll see a thick white dashed circle that touches the center and bulges out to the left side (the Retreating side). This is the **Reverse Flow Boundary** ($U_T = 0$). Inside this white dashed circle, the helicopter is flying forward so fast that the 60 m/s wind is actually blowing *backwards* over the retreating blade! This is exactly why the entire area inside that dashed circle is dark blue/purple—the lift has violently crashed and actually gone negative!
+    *   **The Thick White Dashed Circle (Left Side):** If you look at the exact center of the crosshairs, you'll see a thick white dashed circle that touches the center and bulges out to the left side (the Retreating side). This is the **Reverse Flow Boundary** ($U_T = 0$). Inside this white dashed circle, the helicopter is flying forward so fast that the 30 m/s wind is actually blowing *backwards* over the retreating blade! This is exactly why the entire area inside that dashed circle is dark blue/purple—the lift has violently crashed and actually gone negative!
 *   **The Math:** This plots the vertical force distribution:
 $$ \frac{dF_z}{dr} = \frac{1}{2}\rho (U_T^2 + U_P^2) c (C_l \cos\phi - C_d \sin\phi) F(r) $$
 *   **The Physics:** You can clearly see a massive red "hotspot" on the right side (the Advancing Side, $\psi = 90^\circ$). Here, the blade's rotation speed ($\Omega r$) adds directly to the helicopter's forward speed ($V_{\infty}$), resulting in a massive tangential velocity ($U_T$). Since Lift scales with $U_T^2$, the lift explodes. Conversely, the left side (Retreating, $\psi = 270^\circ$) is dark blue because the speeds subtract, killing the lift.
@@ -190,7 +190,6 @@ $$ \frac{dF_\psi}{dr} = \frac{1}{2}\rho (U_T^2 + U_P^2) c (C_l \sin\phi + C_d \c
 *   **The Physics:** This graph perfectly summarizes the physics of the contour maps. The thrust forms a heavily skewed $1\text{P}$ (once-per-revolution) harmonic sine wave. 
     *   At the **Advancing Sector** (Yellow highlight, $\psi=90^\circ$), the single blade generates a peak lift of **56.6 kN**.
     *   At the **Retreating Sector** (Red highlight, $\psi=270^\circ$), the lift crashes to a minimum of **0.6 kN**.
-    *   The **Cycle-Averaged Mean Blade Lift** (the red dashed line) sits exactly at **22.64 kN**.
     *   Because the right side lifts 90x harder than the left side, it physically generates the massive $-127.9$ kN-m Roll Moment ($M_X$) that tries to violently flip the aircraft over. This proves why cyclic pitch is strictly required for forward flight!
 
 ## 3.3 Reverse Flow, Stall, and Mach Limits
@@ -365,4 +364,19 @@ This row contains 4 specific graphs detailing the aircraft's response to Collect
         *   As you move the stick back to the center ($0^\circ$), you remove that extreme nose pitch. The nose "un-stalls" and the clean area shoots back up to 87%!
         *   When you push the stick forward ($+6^\circ$), it adds pitch to the *Tail*. Because the tail is shielded in the messy wake of the rotor, pitching it up doesn't cause nearly as severe of a stall, so the line stays relatively high at 86%.
     *   **Dashed Red Line (Conversion):** Remains completely flat and stable around 84%. Because the airspeed is high (60 m/s) and the rotor is tilted and unloaded, altering the front/back lift distribution doesn't cause any severe stalling!
+
+---
+
+## 4.6 Consolidated Aerodynamic Observations (Summary)
+
+*This table synthesizes the deep physical and mathematical phenomena observed in Sections 3 and 4, proving the solver correctly captures advanced tiltrotor aerodynamics.*
+
+| Observation | Physical Cause & Aerodynamic Theory | Code Implementation & Evidence | Design Implication for Tiltrotor |
+| :--- | :--- | :--- | :--- |
+| **Dissymmetry of Lift** *(Advancing/Retreating Asymmetry)* | Forward speed ($V_\infty$) adds to advancing blade velocity and subtracts from retreating blade ($U_T = \Omega r + V_\infty \sin\psi$). | **Sec 3.2 Contour:** Advancing sector generates **56.6 kN** peak lift, retreating sector crashes to **0.6 kN**. Generates massive **-127.9 kN-m** Roll Moment ($M_X$). | Requires longitudinal cyclic pitch ($\theta_{1s}$) to feather the blades, balancing the lift across the disk to prevent the aircraft from rolling over. |
+| **Control Coupling** *(Rigid Disk Aerodynamics)* | Because our BEMT assumes a perfectly rigid rotor disk ($\beta=0$), the standard $90^\circ$ gyroscopic flapping lag does not apply. The phase lag is purely aerodynamic. | **Sec 4.2 & 4.3 Sweeps:** Prove that inputs are swapped for a rigid rotor. Longitudinal cyclic ($\theta_{1s}$) causes pure roll, and lateral cyclic ($\theta_{1c}$) causes pure pitch. | The 6-DOF Trim Solver must mathematically couple all inputs using a matrix optimizer; the pilot cannot move one stick independently without affecting others. |
+| **Reverse Flow** *(Air Hitting Trailing Edge)* | At high speeds (60 m/s), wind passes through the rotor faster than the retreating blade spins backward, hitting the trailing edge first ($\alpha = 180^\circ$). | **Sec 3.3(a):** To prevent XFOIL tables from crashing, the physics engine actively switches to the **Viterna-Corrigan 360° flat-plate extrapolation** inside the boundary circle. | The retreating blade produces negative lift and heavy drag. This severely limits the maximum forward airspeed achievable in helicopter mode. |
+| **Stall Onset** *(Figure-8 Boundary)* | **Dual-Mechanism:** Retreating side stalls due to low airspeed/high downwash. Advancing root stalls because the extreme **-30° built-in tiltrotor twist** catches too much air. | **Sec 3.3(b) & 4.1:** Shows the signature "$\infty$" shape where $|\alpha| \ge 15.8^\circ$ (the VR-12 stall limit). Sweeps show unstalled area crashing at high collective. | Sets a hard collective limit ($\theta_0 < 15^\circ$) before catastrophic stall occurs, strictly limiting the maximum payload the aircraft can hover with. |
+| **Tip-Mach Limitations** *(Wave Drag)* | Advancing tip velocity approaches the speed of sound ($M_{tip} = 0.84$) during fast forward flight. | **Sec 3.3(c):** Mach contour hits the **$M > 0.75$ Drag Divergence ($M_{dd}$)** limit. Code applies the **Prandtl-Glauert** ($\beta = \sqrt{1-M^2}$) scaling to calculate wave drag. | Causes severe wave drag. Requires tilting the nacelles forward and significantly **slowing down the rotor RPM** during conversion to keep tips subsonic. |
+| **The Power Bucket** *(Induced Power Trends)* | Induced power scales exponentially with required thrust ($P \propto T^{1.5}$). Hovering requires massive engine output. | **Sec 4.1:** Solid Blue hover power curve rockets upward, while the Red Dashed line (Conversion flight) requires much less power. | The aircraft must transition to airplane mode quickly to shift lift generation to the wings. Unloading the rotors is required to stay under the **2800 kW** engine limit. |
 
