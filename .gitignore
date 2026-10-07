@@ -2,3 +2,6 @@
 .ipynb_checkpoints/
 __pycache__/
 tiltrotor_rotor_database.csv
+tiltrotor_rotor_database_refined*
+.venv
+tiltrotor_db_checkpoints_*

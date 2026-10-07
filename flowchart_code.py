@@ -594,6 +594,8 @@ def plot_section2_3_mission_flowchart():
 # 3. SECTION 3 VERIFICATION SUITE (RENDERED INLINE IN NOTEBOOK)
 # ------------------------------------------------------------------------------
 def run_section3_verification_suite(show_plots: bool = True):
+    import warnings
+    warnings.filterwarnings("ignore", message="This figure includes Axes that are not compatible with tight_layout")
     plot_section2_1_flowchart()
     plot_section2_2_trim_flowchart()
     plot_section2_3_mission_flowchart()
@@ -657,30 +659,26 @@ def run_section3_verification_suite(show_plots: bool = True):
         },
     ])
 
-    print("=" * 95)
     print("SECTION 3.1 — RECOVERY OF MILESTONE 1 LIMITING CASES (AXISYMMETRIC REGRESSION CHECK)")
-    print("=" * 95)
     print(df_sec31.to_string(index=False, float_format=lambda x: f"{x:.6f}"))
     print()
 
     v_edge_rep = 60.0
-    tn_rep = 75.0
-    rpm_rep = 480.0
+    tn_rep = 90.0
+    rpm_rep = 400.0
     r_hub_port = np.array([0.0, -0.5 * float(SIZED_VEHICLE.get("Wingspan", 20.0)), -0.8])
 
     m2_rep = run_edgewise_bemt(
         R_rot, r_cut, Nb, c_root, taper,
         collective_deg=14.0, twist_deg=twist_deg, rpm=rpm_rep,
         v_inf_ms=v_edge_rep, theta_nac_deg=tn_rep, airfoil=af_model,
-        cyclic_1c_deg=1.2, cyclic_1s_deg=-3.5, alpha_body_deg=2.0,
+        cyclic_1c_deg=0.0, cyclic_1s_deg=0.0, alpha_body_deg=0.0,
         rho=rho_sl, a_sound=a_sl, mu_visc=mu_sl,
         num_radial=40, num_azimuth=90, rotation_dir=1, r_hub_body=r_hub_port,
         flapping_mode="steady_1st_harmonic"
     )
 
-    print("=" * 95)
     print(f"SECTION 3.2 & 3.3 — REPRESENTATIVE EDGEWISE CONDITION (V={v_edge_rep:.0f} m/s, theta_nac={tn_rep:.0f} deg, RPM={rpm_rep:.0f})")
-    print("=" * 95)
     print(f"  Advance Ratio mu_edge      : {m2_rep.mu_edge:.4f}   | Axial Inflow mu_z         : {m2_rep.mu_axial:.4f}")
     print(f"  Glauert Total Inflow lam_G : {m2_rep.lambda_G:.4f}   | Longitudinal Gradient K_x : {m2_rep.kx_inflow:.4f}")
     print(f"  Rotor Thrust T             : {m2_rep.thrust_N:,.1f} N | Rotor Shaft Power P       : {m2_rep.power_kW:,.1f} kW")
@@ -698,7 +696,7 @@ def run_section3_verification_suite(show_plots: bool = True):
     for nr in nr_list:
         res_nr = run_edgewise_bemt(
             R_rot, r_cut, Nb, c_root, taper, 14.0, twist_deg, rpm_rep,
-            v_edge_rep, tn_rep, af_model, cyclic_1c_deg=1.2, cyclic_1s_deg=-3.5,
+            v_edge_rep, tn_rep, af_model, cyclic_1c_deg=0.0, cyclic_1s_deg=0.0,
             rho=rho_sl, a_sound=a_sl, mu_visc=mu_sl, num_radial=nr, num_azimuth=72
         )
         T_vs_nr.append(res_nr.thrust_N * 1e-3)
@@ -708,7 +706,7 @@ def run_section3_verification_suite(show_plots: bool = True):
     for npsi in npsi_list:
         res_npsi = run_edgewise_bemt(
             R_rot, r_cut, Nb, c_root, taper, 14.0, twist_deg, rpm_rep,
-            v_edge_rep, tn_rep, af_model, cyclic_1c_deg=1.2, cyclic_1s_deg=-3.5,
+            v_edge_rep, tn_rep, af_model, cyclic_1c_deg=0.0, cyclic_1s_deg=0.0,
             rho=rho_sl, a_sound=a_sl, mu_visc=mu_sl, num_radial=30, num_azimuth=npsi
         )
         T_vs_npsi.append(res_npsi.thrust_N * 1e-3)
@@ -740,9 +738,7 @@ def run_section3_verification_suite(show_plots: bool = True):
         # =====================================================================
         # STEP 3.1 FIGURE: RECOVERY OF MILESTONE 1 LIMITING CASES (2 PLOTS)
         # =====================================================================
-        print("\n" + "="*95)
         print("STEP 3.1 — RECOVERY OF MILESTONE 1 LIMITING CASES (HOVER & AXIAL CRUISE)")
-        print("="*95)
         fig31, (ax31a, ax31b) = plt.subplots(1, 2, figsize=(16.5, 5.6), dpi=140)
         fig31.subplots_adjust(wspace=0.28, top=0.82, bottom=0.16)
 
@@ -773,15 +769,14 @@ def run_section3_verification_suite(show_plots: bool = True):
         ax31b.legend(fontsize=8.3, loc="upper left", frameon=True, facecolor="white", edgecolor="#94a3b8")
 
         fig31.suptitle("Section 3.1 Verification — Recovery of Milestone 1 Limiting Cases (Hover θ_nac = 90° & Axial Cruise θ_nac = 0°)", fontsize=12.8, fontweight="bold", y=0.96)
+        plt.tight_layout(pad=2.0)
         plt.savefig("sec_3_1_limiting_cases.png", bbox_inches="tight", dpi=140)
         plt.show()
 
         # =====================================================================
         # STEP 3.2 FIGURE: AZIMUTHAL LOADING & PERIODICITY (3 PANELS)
         # =====================================================================
-        print("\n" + "="*95)
         print("STEP 3.2 — AZIMUTHAL SECTIONAL LOADING (N/m) & 2π PERIODICITY")
-        print("="*95)
         fig32 = plt.figure(figsize=(18.5, 6.2), dpi=140)
         gs32 = fig32.add_gridspec(1, 3, width_ratios=[1.05, 1.05, 1.15], wspace=0.38, top=0.80, bottom=0.18)
 
@@ -819,15 +814,14 @@ def run_section3_verification_suite(show_plots: bool = True):
         ax32c.legend(fontsize=7.8, loc="upper right", frameon=True, facecolor="white")
 
         fig32.suptitle("Section 3.2 Verification — Azimuthal Sectional Loading Contours (N/m) & 2π Rotational Periodicity", fontsize=12.8, fontweight="bold", y=0.96)
+        plt.tight_layout(pad=2.0)
         plt.savefig("sec_3_2_azimuthal_loading.png", bbox_inches="tight", dpi=140)
         plt.show()
 
         # =====================================================================
         # STEP 3.3 FIGURE: REVERSE-FLOW (VIA V_T), STALL ('∞') & TIP MACH CHECKS
         # =====================================================================
-        print("\n" + "="*95)
         print("STEP 3.3 — REVERSE-FLOW IDENTIFICATION VIA IN-PLANE VELOCITY V_T, STALL & ADVANCING-TIP MACH")
-        print("="*95)
         fig33 = plt.figure(figsize=(19.2, 6.6), dpi=140)
         gs33 = fig33.add_gridspec(1, 3, wspace=0.38, top=0.79, bottom=0.19)
 
@@ -886,15 +880,14 @@ def run_section3_verification_suite(show_plots: bool = True):
         ], loc="upper center", bbox_to_anchor=(0.5, -0.13), fontsize=7.5, frameon=True, facecolor="#f8fafc", edgecolor="#94a3b8")
 
         fig33.suptitle("Section 3.3 Verification — Reverse-Flow Identification via In-Plane Velocity V_T, Two-Lobe '∞' Stall & Advancing-Tip Mach Boundaries", fontsize=12.6, fontweight="bold", y=0.96)
+        plt.tight_layout(pad=2.0)
         plt.savefig("sec_3_3_reverse_flow_tip_mach.png", bbox_inches="tight", dpi=140)
         plt.show()
 
         # =====================================================================
         # STEP 3.4 FIGURE: NUMERICAL SENSITIVITY (4 SEPARATE PLOTS AS REQUIRED!)
         # =====================================================================
-        print("\n" + "="*95)
         print("STEP 3.4 — NUMERICAL DISCRETIZATION SENSITIVITY (4 DEDICATED PLOTS: T vs N_r, Q vs N_r, T vs N_ψ, Q vs N_ψ)")
-        print("="*95)
         fig34, ((ax34a, ax34b), (ax34c, ax34d)) = plt.subplots(2, 2, figsize=(16.5, 9.2), dpi=140)
         fig34.subplots_adjust(hspace=0.38, wspace=0.26, top=0.88, bottom=0.08)
 
@@ -939,7 +932,9 @@ def run_section3_verification_suite(show_plots: bool = True):
         ax34d.legend(fontsize=8.3, loc="upper right")
 
         fig34.suptitle("Section 3.4 Verification — Sensitivity of Thrust & Torque to Radial (N_r) and Azimuthal (N_ψ) Discretization (4 Required Plots)", fontsize=12.8, fontweight="bold", y=0.96)
+        plt.tight_layout(pad=2.0)
         plt.savefig("sec_3_4_numerical_sensitivity.png", bbox_inches="tight", dpi=140)
+        plt.tight_layout(pad=2.0)
         plt.savefig("section3_verification.png", bbox_inches="tight", dpi=140)
         plt.show()
     return {"df_sec31": df_sec31, "m2_rep": m2_rep}
