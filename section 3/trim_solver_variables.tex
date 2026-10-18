@@ -1,0 +1,94 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath, amssymb}
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
+
+\title{Milestone 2: Trim Solver \\ \Large Variable Definitions Glossary}
+\author{Team 9}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section*{1. Flight State \& Fixed Inputs}
+\begin{itemize}
+    \item $V_\infty$: Freestream airspeed [m/s].
+    \item $h$: Altitude [m] (ISA standard atmosphere).
+    \item $\gamma$: Climb angle [deg]. ($\gamma \in [7^\circ, 9^\circ]$ for conversion flight.)
+    \item $\theta_{nac}$: Nacelle tilt angle [deg]. ($0^\circ$ = airplane mode, $90^\circ$ = helicopter mode.)
+    \item $\Omega(\theta_{nac})$: Scheduled rotor angular speed as a function of nacelle tilt [rad/s].
+    \item $W = mg$: Aircraft gross weight [N].
+    \item $g$: Gravitational acceleration [m/s$^2$].
+\end{itemize}
+
+\section*{2. Unknown Trim Control Vector $u$}
+\begin{itemize}
+    \item $u = [\theta_0,\; \theta_{1s},\; \theta_{1c},\; \theta_{pitch},\; \delta_e,\; \phi_{roll}]^T$: The 4-DOF (symmetric) or 6-DOF (general) trim control vector.
+    \item $\theta_0$: Rotor collective pitch angle [deg]. Bounds: $\theta_0 \in [-4^\circ, 45^\circ]$.
+    \item $\theta_{1s}$: Longitudinal cyclic pitch angle [deg]. Bounds: $\theta_{1s} \in [-12^\circ, +12^\circ]$.
+    \item $\theta_{1c}$: Lateral cyclic pitch angle [deg]. Bounds: $\theta_{1c} \in [-12^\circ, +12^\circ]$.
+    \item $\theta_{pitch}$: Aircraft body pitch angle [deg]. Bounds: $\theta_{pitch} \in [-12^\circ, +12^\circ]$.
+    \item $\delta_e$: Elevator deflection angle [deg]. Bounds: $\delta_e \in [-24^\circ, +12^\circ]$.
+    \item $\phi_{roll}$: Aircraft bank/roll angle [deg].
+\end{itemize}
+
+\section*{3. Dual Rotor BEMT (Wingtip Propellers)}
+\begin{itemize}
+    \item $s$: Rotor rotation direction sign ($s = +1$ for Port/CCW, $s = -1$ for Starboard/CW).
+    \item $F_{rot,L},\; M_{rot,L}$: Force and moment outputs from the port (left) rotor BEMT evaluation.
+    \item $F_{rot,R},\; M_{rot,R}$: Force and moment outputs from the starboard (right) rotor BEMT evaluation.
+    \item $\lambda_{wash}$: Rotor-induced wash ratio at the wing $= v_i / (\Omega R)$ [-].
+    \item $v_i$: Rotor-induced velocity at the wing leading edge [m/s].
+    \item $y_{nac}$: Lateral position of the nacelle from the aircraft centerline [m].
+\end{itemize}
+
+\section*{4. Airframe Aerodynamics}
+\begin{itemize}
+    \item $\alpha_w$: Wing effective angle of attack (corrected for induced wash) [rad or deg]. $\alpha_w = \alpha_B + i_w - \alpha_{wash}(\theta_{nac}, \lambda_i)$.
+    \item $i_w$: Wing incidence angle [deg].
+    \item $\alpha_{wash}$: Rotor-induced downwash angle at the wing [rad].
+    \item $q = \tfrac{1}{2}\rho V_\infty^2$: Dynamic pressure [Pa].
+    \item $S_w$: Wing reference area [m$^2$].
+    \item $L_w$: Wing lift force [N]. $L_w = qS_w C_L(\alpha_w)$.
+    \item $D_w$: Wing drag force [N]. $D_w = qS_w\left(C_{D0} + C_L^2/(\pi A e)\right)$.
+    \item $C_L, C_{D0}$: Wing lift and zero-lift drag coefficients [-].
+    \item $A$: Wing aspect ratio [-].
+    \item $e$: Oswald span efficiency factor [-].
+    \item $D_{fuse+nac}$: Combined fuselage and nacelle drag [N]. $D_{fuse+nac} = qS_w\left(C_{D0,fuse} + \Delta C_{D,nac}\sin^2\theta_{nac}\right)$.
+    \item $S_{ht}$: Horizontal tail reference area [m$^2$].
+    \item $a_{ht}$: Horizontal tail lift-curve slope [1/rad].
+    \item $\alpha_{ht}$: Horizontal tail angle of attack [rad].
+    \item $\tau_e$: Elevator effectiveness coefficient [-].
+    \item $L_{ht}$: Horizontal tail lift [N]. $L_{ht} = qS_{ht}(a_{ht}\alpha_{ht} + \tau_e\delta_e)$.
+    \item $x_{ht}$: Moment arm from CG to horizontal tail aerodynamic centre [m].
+    \item $M_{Y,ht}$: Pitching moment from horizontal tail about CG [N$\cdot$m]. $M_{Y,ht} = -x_{ht}L_{ht}$.
+\end{itemize}
+
+\section*{5. 6-DOF Residual Vector $R(u)$}
+\begin{itemize}
+    \item $R(u) = [R_1, R_2, R_3, R_4, R_5, R_6]^T$: The 6-component force and moment residual vector.
+    \item $R_1 = F_{X,rot} + F_{X,aero} - W\sin\theta_{pitch} = 0$: Axial (X) force equilibrium.
+    \item $R_2 = F_{Y,rot} + F_{Y,aero} + W\cos\theta_{pitch}\sin\phi = 0$: Side (Y) force equilibrium.
+    \item $R_3 = F_{Z,rot} + F_{Z,aero} + W\cos\theta_{pitch}\cos\phi = 0$: Vertical (Z) force equilibrium.
+    \item $R_4 = \sum M_X = 0$: Roll moment equilibrium.
+    \item $R_5 = \sum M_Y = 0$: Pitch moment equilibrium.
+    \item $R_6 = \sum M_Z = 0$: Yaw moment equilibrium.
+\end{itemize}
+
+\section*{6. Solver \& Feasibility}
+\begin{itemize}
+    \item $J_{ij} = \partial R_i / \partial u_j$: Finite-difference Jacobian matrix of the residual with respect to controls [-].
+    \item $\Delta u$: Trust-region Newton step applied to update the control vector.
+    \item $\|F_{res}\|_\infty$: Infinity-norm of the force residuals [N]. Convergence requires $\|F_{res}\|_\infty < 5.0$ N.
+    \item $\|M_{res}\|_\infty$: Infinity-norm of the moment residuals [N$\cdot$m]. Convergence requires $\|M_{res}\|_\infty < 5.0$ N$\cdot$m.
+    \item $P_{req}$: Total required rotor shaft power [W].
+    \item $P_{avail}(h)$: Available installed engine power at altitude $h$ [W].
+    \item $\eta_{xmsn}$: Gearbox/transmission efficiency [-].
+    \item $\alpha_{stall}$: Rotor blade stall angle of attack [deg].
+    \item $P_{95}(|\alpha_{blade}|)$: 95th-percentile absolute blade angle of attack over one revolution [deg].
+    \item $M_{tip}$: Advancing rotor tip helical Mach number [-]. Limit: $M_{tip} \leq 0.85$.
+    \item $\alpha_w^{max}$: Wing stall angle of attack limit [$15.5^\circ$].
+\end{itemize}
+
+\end{document}

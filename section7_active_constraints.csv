@@ -1,0 +1,5 @@
+Boundary,Governing limit,Location on map,Design sensitivity
+Power,$P_{total} \\leq P_{avail}$,"V = 120.0 m/s, θnac = 40.0°",Power demand increases with aerodynamic and rotor loading; available power limits the conversion envelope.
+Wing stall,$|\\alpha_w| \\leq 15.5^\\circ$,"V = 10.0 m/s, θnac = 0.0°",Wing lift sharing and aircraft trim determine the available wing angle-of-attack margin.
+Advancing-tip Mach,$M_{tip} \\leq 0.85$,"V = 120.0 m/s, θnac = 90.0°",Advancing-tip Mach increases with forward speed and rotor rotational speed.
+Control saturation,Control travel limits,"V = 10.0 m/s, θnac = 0.0°",Reduced control margin indicates decreasing trim authority near the conversion-envelope boundary.

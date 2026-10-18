@@ -1,0 +1,86 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath, amssymb}
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
+
+\title{Milestone 2: Edgewise-Flight Performance Estimator \\ \Large Variable Definitions Glossary}
+\author{Team 9}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section*{1. Flight State \& Pilot Controls}
+\begin{itemize}
+    \item $V_{\infty}$: Freestream velocity of the aircraft [m/s].
+    \item $h$: Altitude [m].
+    \item $\alpha_B$: Aircraft body angle of attack (pitch attitude) [deg or rad].
+    \item $\theta_{nac}$: Nacelle tilt angle [deg or rad]. ($\theta_{nac} = 0^\circ$ for airplane mode, $90^\circ$ for helicopter mode).
+    \item $\theta_0$: Rotor collective pitch angle [deg].
+    \item $\theta_{1c}$: Lateral cyclic pitch angle [deg].
+    \item $\theta_{1s}$: Longitudinal cyclic pitch angle [deg].
+    \item $\Omega$: Rotor rotational speed [rad/s].
+    \item $R$: Rotor tip radius [m].
+    \item $r_c$: Root cutout radius [m].
+    \item $N_r$: Number of radial blade stations in the 2D mesh.
+    \item $N_\psi$: Number of azimuthal sectors in the 2D mesh.
+\end{itemize}
+
+\section*{2. Shaft Projection \& Advance Ratios}
+\begin{itemize}
+    \item $V_{axial}$: Axial component of freestream velocity relative to the rotor shaft [m/s]. $V_{axial} = V_\infty \cos(\theta_{nac} + \alpha_B)$.
+    \item $V_{edge}$: Edgewise (in-plane) component of freestream velocity relative to the rotor shaft [m/s]. $V_{edge} = V_\infty \sin(\theta_{nac} + \alpha_B)$.
+    \item $\mu$: Edgewise advance ratio [-]. Defined as $\mu = V_{edge} / (\Omega R)$.
+    \item $\mu_z$: Axial advance ratio [-]. Defined as $\mu_z = V_{axial} / (\Omega R)$.
+\end{itemize}
+
+\section*{3. Inflow Model (Glauert + Pitt-Peters)}
+\begin{itemize}
+    \item $\lambda_G$: Glauert mean induced inflow ratio [-].
+    \item $K_x$: Coleman/Pitt-Peters longitudinal inflow gradient coefficient [-].
+    \item $\lambda_i(r, \psi)$: Local induced inflow ratio at radial station $r$ and azimuth $\psi$ [-]. $\lambda_i(r, \psi) = \lambda_G \times [1 + K_x (r/R) \cos\psi]$.
+    \item $\omega$: Relaxation factor for the inner fixed-point iteration loop.
+    \item $F(r)$: Prandtl tip-loss factor [-].
+    \item $f_{tip}$: Tip-loss exponent [-].
+\end{itemize}
+
+\section*{4. Blade Kinematics \& Sectional Aerodynamics}
+\begin{itemize}
+    \item $r$: Local radial blade station [m].
+    \item $\psi$: Local azimuth angle [rad]. ($\psi = 0^\circ$ is aft over the tail, $90^\circ$ is advancing, $180^\circ$ is nose, $270^\circ$ is retreating).
+    \item $\theta(r, \psi)$: Local blade pitch angle [rad]. $\theta = \theta_0 + \theta_{tw}(r/R - 0.75) + \theta_{1c} \cos\psi + \theta_{1s} \sin\psi$.
+    \item $U_T$: Tangential velocity at the blade element [m/s]. $U_T = \Omega r + V_{edge} \sin\psi$.
+    \item $U_P$: Perpendicular (axial) velocity at the blade element [m/s]. $U_P = V_{axial} + \lambda_i \Omega R + r \dot{\beta} + V_{edge} \beta \cos\psi$.
+    \item $\alpha$: Local angle of attack [rad]. $\alpha = \theta - \arctan(U_P / U_T)$.
+    \item $M$: Local Mach number [-]. $M = \sqrt{U_T^2 + U_P^2} / a$.
+    \item $Re$: Local Reynolds number [-]. $Re = \rho \sqrt{U_T^2 + U_P^2} c / \mu_{visc}$.
+    \item $\beta$: Prandtl-Glauert compressibility correction factor [-]. $\beta = \sqrt{1 - M^2}$.
+    \item $C_l, C_d$: Sectional lift and drag coefficients (interpolated from 2D airfoil tables) [-].
+\end{itemize}
+
+\section*{5. Blade Loads \& Hub Integration}
+\begin{itemize}
+    \item $dF_z/dr$: Normal (axial) thrust loading per unit span [N/m].
+    \item $dF_\psi/dr$: In-plane tangential loading per unit span [N/m].
+    \item $T$: Integrated rotor thrust [N].
+    \item $Q$: Integrated rotor shaft torque [N$\cdot$m].
+    \item $P$: Integrated rotor shaft power [W]. ($P = \Omega Q$).
+    \item $H$: In-plane Hub H-force (drag force, positive pointing aft) [N].
+    \item $Y$: In-plane Hub Y-force (side force, positive pointing right) [N].
+    \item $M_{xs}$: Hub roll moment [N$\cdot$m].
+    \item $M_{ys}$: Hub pitch moment [N$\cdot$m].
+    \item $M_{zs}$: Hub yaw moment (equal to $-Q \times \text{sgn}(\Omega)$) [N$\cdot$m].
+\end{itemize}
+
+\section*{6. Aircraft Transformation \& Diagnostics}
+\begin{itemize}
+    \item $R_{BS}(\theta_{nac})$: Rotation matrix from the rotor Shaft frame ($S$) to the Body frame ($B$), dependent on nacelle tilt.
+    \item $F_S$: Force vector in the shaft frame $[H, Y, T]^T$ [N].
+    \item $F_B$: Force vector in the aircraft body frame $[F_X, F_Y, F_Z]^T$ [N].
+    \item $r_{hub,B}$: Position vector of the rotor hub relative to the aircraft Center of Gravity (CG) in the body frame [m].
+    \item $M_{B,CG}$: Total moment vector acting on the aircraft CG $[M_X, M_Y, M_Z]^T$ [N$\cdot$m].
+    \item $M_{tip}$: Peak advancing tip Mach number [-].
+\end{itemize}
+
+\end{document}
