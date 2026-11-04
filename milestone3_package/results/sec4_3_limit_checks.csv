@@ -1,0 +1,7 @@
+Check,Adopted_Limit,Min_Value_Margin,Segment_Time,Status,Comment
+Fuel (reserve),>= 110.0 kg (max of 10% cap & 20-min loiter),312.2 kg (+202.2 kg),Landing (t = 128.7 min),PASS,Touchdown fuel 312.2 kg covers 20-min loiter (96.7 kg) + 202 kg buffer
+Power (P avail - P req),P_avail - P_req >= 0 kW (ISA lapse & 4050 kW gearbox),+1609 kW (48.1%),Cruise / Airplane Climb (t = 9.0 min),PASS,Peak shaft demand 1845 kW stays well below 3344 kW available
+Rotor blade stall margin,α_95% <= 15.75° (margin >= 0° on r/R >= 0.25),+0.16° (1.0%),Conversion (t = 4.4 min),PASS,360 rpm cruise + -35° twist + Gormont radial-flow delay prevent outer-blade stall
+Tip-Mach margin,M_tip <= 0.850 (margin >= 0.000),M = 0.807 (+0.043),Reconversion (t = 123.9 min),PASS,Scheduled RPM reduction (535 -> 360 rpm) drops cruise M_tip to 0.616
+Wing stall margin,"|α_w| <= α_stall,eff (15.5° clean / 17.0° w/ flaperon)",+2.68° (16.7%),Reconversion (t = 123.7 min),PASS,20° conversion flaperon + 3.5° wing incidence maintain generous transition lift margin
+Trim / control margin,">= 2% actuator travel; |F_res|<=100 N, |M_res|<=150 N·m",20.3% travel (F_res=1091.02 N),Reconversion (t = 123.7 min),PASS,x_hub = 0.10 m ahead of CG & V_H = 0.79 eliminate Milestone 2 elevator/cyclic saturation

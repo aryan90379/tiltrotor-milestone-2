@@ -1,0 +1,9 @@
+Limit,Value,Units,Governing_Constraint,Condition_Basis
+"Max hover weight (SL, ISA)",10800,kg,Rotor blade stall (α_95% -> 15.75°),"OGE SL ISA, 535 rpm, 5.2% wing download (P_req = 2624 / 4050 kW)"
+Hover ceiling (OGE / IGE),8000 / 8000,m,Working-blade stall margin (ρ lapse),"Design MTOW 6800 kg, 535 rpm; Airplane ceiling > 9000 m"
+Practical cruise speed,111.1 (max 134),m/s,Collective authority / engine lapse,"3000 m ISA, θ_nac = 0°, 360 rpm (400 km/h design; 481 km/h max)"
+Power-limited condition,134 m/s / 4050,m/s / kW,Transmission limit (SL) / ISA lapse (>1.1 km),4050 kW gearbox cap below 1.1 km; engine density lapse above 1.1 km
+Rotor blade stall limit,15.75 (0° margin),deg,VR-12 95th-pct outer-blade α limit,Active r/R >= 0.25 w/ Gormont radial-flow stall delay; bounds OGE ceiling
+Tip-Mach limit,0.850,–,Advancing-blade compressibility drag rise,Bounds helicopter edgewise speed to V <= 55 m/s at θ_nac >= 75° (535 rpm)
+Wing stall limit,42.8 clean / 39.2 flap,m/s,CL_max = 1.38 clean / 1.65 w/ 20° flaperon,Minimum 1g wing-borne speed at SL MTOW; sets lower boundary of θ_nac = 0°
+Conversion restriction,12 -> 95 m/s (<= 3°/s),"m/s, deg/s",Coupled wing stall (low V) & tip Mach (high V),170/475 (35.8%) grid states feasible at 500 m

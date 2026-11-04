@@ -1,0 +1,7 @@
+Metric,Final_Design,Ref1_AW609,Ref2_XV15,Ratio_Final_Ref1,Note_Source
+Disk loading,501.6 N/m²,812.7 N/m²,645.1 N/m²,0.62×,Larger R = 4.60 m lowers hover power & improves OGE efficiency [Leonardo; NASA SP-2000-4517]
+Wing loading,1551 N/m²,4328 N/m²,3748 N/m²,0.36×,Generous S = 43 m² (b = 20 m for rotor clearance) widens low-speed conversion corridor
+Power loading (hover),15.5 N/kW,27.7 N/kW,25.4 N/kW,0.56×,Higher installed P/W (4300 kW) provides OEI safety & high-altitude climb reserve
+Cruise speed,111.1 m/s (400 km/h),138.9 m/s (500 km/h),132.0 m/s (475 km/h),0.80×,Lower W/S increases cruise parasite drag area S·CD0 relative to compact AW609 wing
+Payload fraction,22.1%,22.0%,22.7%,1.00×,Matches AW609/XV-15 cabin payload fraction (1500 kg payload at 6800 kg MTOW)
+Max gross mass,"6,800 kg","8,165 kg","6,000 kg",0.83×,Medium twin-turboshaft tiltrotor bracketed directly between XV-15 and AW609

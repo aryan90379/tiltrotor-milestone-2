@@ -1,0 +1,21 @@
+{
+  "mtow_kg": 6800.0,
+  "hover_sl_power_kW": 1584.6,
+  "hover_sl_FM": 0.689,
+  "max_hover_mass_sl_kg": 10800.0,
+  "oge_hover_ceiling_m": 8000.0,
+  "ige_hover_ceiling_m": 8000.0,
+  "airplane_service_ceiling_m": 9000.0,
+  "cruise_design_power_kW": 1085.6,
+  "cruise_design_eta_prop": 0.833,
+  "cruise_design_LD": 8.65,
+  "best_range_speed_ms": 62.0,
+  "best_range_km": 1703.8,
+  "best_range_LD": 13.96,
+  "vmax_feasible_ms": 133.6,
+  "corridor_feasible_count": 170,
+  "corridor_total_count": 475,
+  "corridor_feasible_pct": 35.8,
+  "vs_clean_sl_ms": 42.8,
+  "vs_flap_sl_ms": 39.2
+}

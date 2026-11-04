@@ -1,0 +1,5 @@
+Operating_Point,Alt_ISA,Gross_Mass_kg,RPM_Collective,Thrust_or_Lift_N,P_req_kW,P_avail_kW,Efficiency_Metric
+"Hover, design weight",0 m / SL ISA,6800.0,535 rpm / 6.4°,70343 N (T),1584.6,4050.0,FM = 0.689
+"Hover, max weight / ceiling",7400 m OGE (14700 kg SL),6800.0,535 rpm / 12.8°,70343 N (T),1868.3,1875.5,FM = 0.861
+"Cruise, design speed (111.1 m/s)",3000 m / ISA,6800.0,360 rpm / 42.0°,66191 N (L),1083.2,3127.6,"ηp = 0.83, L/D = 8.7"
+"Cruise, best range (87.8 m/s)",3000 m / ISA,6800.0,360 rpm / 35.4°,68913 N (L),679.9,3127.6,"ηp = 0.78, L/D = 12.1 (1248 km)"

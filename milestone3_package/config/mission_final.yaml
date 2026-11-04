@@ -1,0 +1,83 @@
+{
+  "mission_name": "Regional Point-to-Point VTOL Rapid-Response Transport (750 km)",
+  "atmosphere": {
+    "start_altitude_m": 0.0,
+    "isa_delta_t_degC": 0.0,
+    "headwind_ms": 4.0
+  },
+  "loading": {
+    "initial_payload_kg": 1500.0,
+    "initial_fuel_kg": 1100.0,
+    "payload_drop_after_cruise_kg": 0.0,
+    "reserve_fuel_min_fraction": 0.10,
+    "reserve_loiter_duration_min": 20.0,
+    "reserve_loiter_altitude_m": 1500.0,
+    "reserve_loiter_speed_ms": 78.0
+  },
+  "segments": [
+    {
+      "id": 1,
+      "name": "Takeoff / hover",
+      "label_long": "Vertical takeoff and hover climb",
+      "hover_hold_s": 90.0,
+      "hover_alt_m": 30.0,
+      "climb_duration_s": 120.0,
+      "end_alt_m": 400.0,
+      "end_tas_ms": 12.0,
+      "nacelle_deg": 90.0,
+      "dt_s": 15.0
+    },
+    {
+      "id": 2,
+      "name": "Conversion",
+      "label_long": "Conversion to airplane mode",
+      "duration_s": 90.0,
+      "start_alt_m": 400.0,
+      "end_alt_m": 550.0,
+      "start_tas_ms": 12.0,
+      "end_tas_ms": 92.0,
+      "start_nacelle_deg": 88.0,
+      "end_nacelle_deg": 0.0,
+      "n_steps": 24
+    },
+    {
+      "id": 3,
+      "name": "Cruise",
+      "label_long": "Cruise (climb / level / descent)",
+      "climb_duration_s": 360.0,
+      "cruise_alt_m": 3000.0,
+      "cruise_tas_ms": 111.111,
+      "target_total_mission_distance_km": 750.0,
+      "descent_duration_s": 420.0,
+      "end_descent_alt_m": 550.0,
+      "end_descent_tas_ms": 58.0,
+      "nacelle_deg": 0.0,
+      "dt_climb_descent_s": 30.0,
+      "dt_cruise_s": 120.0
+    },
+    {
+      "id": 4,
+      "name": "Reconversion",
+      "label_long": "Reconversion to helicopter mode",
+      "duration_s": 135.0,
+      "start_alt_m": 550.0,
+      "end_alt_m": 480.0,
+      "start_tas_ms": 58.0,
+      "end_tas_ms": 14.0,
+      "start_nacelle_deg": 0.0,
+      "end_nacelle_deg": 90.0,
+      "n_steps": 24
+    },
+    {
+      "id": 5,
+      "name": "Landing",
+      "label_long": "Descent and vertical landing",
+      "approach_duration_s": 150.0,
+      "flare_hover_alt_m": 30.0,
+      "touchdown_hover_s": 90.0,
+      "end_alt_m": 0.0,
+      "nacelle_deg": 90.0,
+      "dt_s": 15.0
+    }
+  ]
+}
