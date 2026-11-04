@@ -1,13 +1,13 @@
 V_ms,nacelle_deg,database_support_feasible,physics_verified,surrogate_usable,operating_class,warning,max_force_residual_pct_W,max_moment_residual_pct_ref,verified_total_up_support_pct_W,reason
-107.5,2.5,True,False,False,FAILED,reverse_flow_warning,3.294732474571904,0.47447923613717324,100.04353349893739,excessive_force_residual; excessive_moment_residual
-107.5,22.5,True,False,False,FAILED,reverse_flow_warning,1.1292855065864973,1.1127562823949553,99.45978152159341,excessive_force_residual; excessive_moment_residual
-107.5,27.5,True,False,False,FAILED,reverse_flow_warning,1.4366787944463426,1.0927547724983937,101.34628310775338,excessive_force_residual; excessive_moment_residual
-22.5,77.5,True,False,False,FAILED,NONE,0.11767405746000673,0.1025608032602376,99.89738916241016,excessive_moment_residual
-12.5,82.5,True,False,False,FAILED,NONE,0.033556443858333077,0.3661360802752083,99.97807425116723,excessive_moment_residual
-22.5,82.5,True,False,False,FAILED,NONE,0.07848159996473479,0.13584887062599468,99.9319409600255,excessive_moment_residual
-27.5,82.5,True,False,False,FAILED,NONE,0.1008071487906147,0.37868973977031994,99.9948530785478,excessive_moment_residual
-2.5,87.5,True,False,False,FAILED,NONE,0.052062739866889855,0.22024986126549,100.05271453333191,excessive_moment_residual
-12.5,87.5,True,False,False,FAILED,NONE,0.06643503399561325,0.4012326525779107,100.06737408157673,excessive_moment_residual
-22.5,87.5,True,False,False,FAILED,NONE,0.09220308873116115,0.1763486102169892,100.0081538936764,excessive_moment_residual
-27.5,87.5,True,False,False,FAILED,NONE,0.11716868341141182,0.09228625542273527,99.99445443222237,excessive_moment_residual
-47.5,87.5,True,False,False,FAILED,reverse_flow_warning,3.1270909964057543,2.2387108341980797,96.8675540292234,excessive_force_residual; excessive_moment_residual
+107.5,2.5,True,False,False,FAILED,reverse_flow_warning,3.294178394046516,0.47432394212160184,100.04354054213849,excessive_force_residual; excessive_moment_residual
+107.5,22.5,True,False,False,FAILED,reverse_flow_warning,1.1292852970758513,1.112755992993124,99.45978157111323,excessive_force_residual; excessive_moment_residual
+107.5,27.5,True,False,False,FAILED,reverse_flow_warning,1.436678725934216,1.0927543018361219,101.34628314691608,excessive_force_residual; excessive_moment_residual
+27.5,77.5,True,False,False,FAILED,reverse_flow_warning,0.09769218685176438,0.2963078280237483,99.93725214923646,excessive_moment_residual
+12.5,82.5,True,False,False,FAILED,NONE,0.04211099949137746,0.4225419242063957,99.96182056322766,excessive_moment_residual
+22.5,82.5,True,True,True,NORMAL,NONE,0.0857825326770804,0.06091837201848873,99.92054485501383,OK
+27.5,82.5,True,False,False,FAILED,NONE,0.09026499124494353,0.2902770530581281,99.97737584958023,excessive_moment_residual
+7.5,87.5,True,False,False,FAILED,NONE,0.07457736297748617,0.3385302910321713,100.0753563674311,excessive_moment_residual
+12.5,87.5,True,False,False,FAILED,NONE,0.06642680412025145,0.4012640616667191,100.06736593013636,excessive_moment_residual
+22.5,87.5,True,False,False,FAILED,NONE,0.09221373091730554,0.176370242398435,100.00813778305182,excessive_moment_residual
+27.5,87.5,True,False,False,FAILED,NONE,0.11718019038250801,0.0923033906928456,99.99445771401571,excessive_moment_residual
+47.5,87.5,True,False,False,FAILED,reverse_flow_warning,3.1270921682351003,2.2387134674965044,96.86755285017236,excessive_force_residual; excessive_moment_residual

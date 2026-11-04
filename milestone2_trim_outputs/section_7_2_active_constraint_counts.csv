@@ -1,10 +1,10 @@
 Primary constraint,Number of grid states,Fraction [%]
-Database / polar-model limit,246,51.78947368421053
+Database / polar-model limit,256,53.89473684210526
 Wing or tail stall,101,21.263157894736842
-Feasible — caution,38,8.0
 Advancing-tip Mach,37,7.7894736842105265
+Feasible — caution,31,6.526315789473684
 Feasible — normal,24,5.052631578947368
-Power limit,19,4.0
+Power limit,17,3.5789473684210527
 Excessive aircraft trim residual,5,1.0526315789473684
 Feasible — marginal,3,0.631578947368421
-Numerical / other failure,2,0.42105263157894735
+Numerical / other failure,1,0.21052631578947367

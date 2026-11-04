@@ -2,8 +2,8 @@
   "database_type": "aircraft trim database",
   "generator": "fast predictor/corrector continuation",
   "model_version": "aircraft-equilibrium-v5-100N-100Nm-stall-diagnostic",
-  "created_utc": "2026-10-07T19:19:49.954024+00:00",
-  "signature": "645618bef67bfeefcd1535f4c5175e5211189e17aa7c54c1cf3b983c8722d873",
+  "created_utc": "2026-11-04T23:37:25.123790+00:00",
+  "signature": "d91045dbe8e3de3905d0488f498329b52d5207fdd1d9782a83dc4406cee8f8fd",
   "signature_data": {
     "model_version": "aircraft-equilibrium-v5-100N-100Nm-stall-diagnostic-fastmap-v3-relaxed-gates",
     "nacelle_grid": [
@@ -56,7 +56,7 @@
     ],
     "altitude_m": 0.0,
     "flight_path_deg": 0.0,
-    "mass_kg": 7428.39826792763,
+    "mass_kg": 7428.398268851493,
     "power_available_kW": 4300.0,
     "wing_area_m2": 43.0,
     "wing_span_m": 19.997499843730466,
@@ -73,14 +73,14 @@
   },
   "csv_file": "tiltrotor_trim_database.csv",
   "row_count": 475,
-  "feasible_count": 65,
-  "generation_seconds": 219.006091625,
+  "feasible_count": 58,
+  "generation_seconds": 229.7372795830015,
   "generation_stats": {
     "direct_predictor_accepts": 0,
     "symmetric_correctors": 475,
-    "full_fallbacks": 10,
+    "full_fallbacks": 7,
     "failed_exceptions": 0,
-    "aircraft_candidate_evaluations": 1810
+    "aircraft_candidate_evaluations": 1801
   },
   "note": "Full 5deg x 5m/s grid. Predictor states are accepted only if the same full six-component aircraft feasibility checks pass."
 }
